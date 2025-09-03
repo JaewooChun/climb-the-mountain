@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '../data/user_service.dart';
 
 class StartMountainView extends StatefulWidget {
   const StartMountainView({Key? key}) : super(key: key);
@@ -164,17 +165,31 @@ class _StartMountainViewState extends State<StartMountainView>
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (goalController.text.trim().isNotEmpty) {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Goal set: ${goalController.text.trim()}',
+                          try {
+                            final userService = await UserService.getInstance();
+                            await userService.setFinancialGoal(goalController.text.trim());
+                            
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Financial goal saved securely!',
+                                ),
+                                backgroundColor: Color(0xFF4CAF50),
                               ),
-                              backgroundColor: Color(0xFF4CAF50),
-                            ),
-                          );
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Error saving goal. Please try again.',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
