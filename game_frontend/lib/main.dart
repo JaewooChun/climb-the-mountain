@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import './screens/starting_view.dart'; // Make sure to import your start_mountain.dart file
+import './screens/views/view_0.dart'; // Initial view that players see
 
 void main() {
   runApp(const FinancialPeakApp());
@@ -18,15 +18,8 @@ class FinancialPeakApp extends StatelessWidget {
       ),
       // Remove the debug banner for a cleaner look
       debugShowCheckedModeBanner: false,
-      // Set StartMountainView as the home screen
-      home: const StartMountainView(),
-      // You can add routes here for navigation later
-      routes: {
-        '/start': (context) => const StartMountainView(),
-        // Add more routes as you build your game
-        // '/dashboard': (context) => DashboardScreen(),
-        // '/mountain-climb': (context) => MountainClimbScreen(),
-      },
+      // Set View0 as the home screen
+      home: const View0(),
     );
   }
 }

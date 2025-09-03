@@ -50,4 +50,16 @@ class LocalStorageService {
   Future<bool> hasUserProfile() async {
     return _prefs!.containsKey(_userProfileKey);
   }
+
+  Future<String?> getString(String key) async {
+    return _prefs!.getString(key);
+  }
+
+  Future<void> setString(String key, String value) async {
+    await _prefs!.setString(key, value);
+  }
+
+  Future<void> removeKey(String key) async {
+    await _prefs!.remove(key);
+  }
 }

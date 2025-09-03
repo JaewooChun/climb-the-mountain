@@ -56,9 +56,21 @@ class UserService {
 
   Future<void> incrementTasksCompleted() async {
     final currentProfile = await getCurrentProfile();
+    final newTasksInLevel = currentProfile.tasksCompletedInCurrentLevel + 1;
+    
     _currentProfile = currentProfile.copyWith(
       totalTasksCompleted: currentProfile.totalTasksCompleted + 1,
+      tasksCompletedInCurrentLevel: newTasksInLevel,
     );
+    
+    // Check if player should advance to next level (3 tasks per level)
+    if (newTasksInLevel >= 3) {
+      _currentProfile = _currentProfile!.copyWith(
+        currentLevel: currentProfile.currentLevel + 1,
+        tasksCompletedInCurrentLevel: 0, // Reset for new level
+      );
+    }
+    
     await _localStorage!.saveUserProfile(_currentProfile!);
   }
 
@@ -75,5 +87,43 @@ class UserService {
   Future<String?> getFinancialGoal() async {
     final profile = await getCurrentProfile();
     return profile.financialGoal;
+  }
+
+  Future<void> addChisel() async {
+    final currentProfile = await getCurrentProfile();
+    _currentProfile = currentProfile.copyWith(
+      chiselCount: currentProfile.chiselCount + 1,
+    );
+    await _localStorage!.saveUserProfile(_currentProfile!);
+  }
+
+  Future<void> useChisel() async {
+    final currentProfile = await getCurrentProfile();
+    if (currentProfile.chiselCount > 0) {
+      _currentProfile = currentProfile.copyWith(
+        chiselCount: currentProfile.chiselCount - 1,
+      );
+      await _localStorage!.saveUserProfile(_currentProfile!);
+    }
+  }
+
+  Future<int> getChiselCount() async {
+    final profile = await getCurrentProfile();
+    return profile.chiselCount;
+  }
+
+  Future<int> getCurrentLevel() async {
+    final profile = await getCurrentProfile();
+    return profile.currentLevel;
+  }
+
+  Future<int> getTasksCompletedInCurrentLevel() async {
+    final profile = await getCurrentProfile();
+    return profile.tasksCompletedInCurrentLevel;
+  }
+
+  Future<double> getLevelProgress() async {
+    final tasksCompleted = await getTasksCompletedInCurrentLevel();
+    return tasksCompleted / 3.0; // 3 tasks per level
   }
 }

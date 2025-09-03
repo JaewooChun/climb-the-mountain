@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import '../data/user_service.dart';
+import '../../data/user_service.dart';
+import '../game_screen.dart';
 
-class StartMountainView extends StatefulWidget {
-  const StartMountainView({Key? key}) : super(key: key);
+class View0 extends StatefulWidget {
+  const View0({Key? key}) : super(key: key);
 
   @override
-  State<StartMountainView> createState() => _StartMountainViewState();
+  State<View0> createState() => _View0State();
 }
 
-class _StartMountainViewState extends State<StartMountainView>
+class _View0State extends State<View0>
     with TickerProviderStateMixin {
   late AnimationController _cloudController;
   late AnimationController _birdController;
@@ -172,12 +173,11 @@ class _StartMountainViewState extends State<StartMountainView>
                             await userService.setFinancialGoal(goalController.text.trim());
                             
                             Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Financial goal saved securely!',
-                                ),
-                                backgroundColor: Color(0xFF4CAF50),
+                            
+                            // Navigate to game screen
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => GameScreen(),
                               ),
                             );
                           } catch (e) {
@@ -251,8 +251,8 @@ class _StartMountainViewState extends State<StartMountainView>
               children: [
                 // Sun
                 Positioned(
-                  right: 80,
-                  top: 120,
+                  right: 60,
+                  bottom: 280,
                   child: Container(
                     width: 100 + (_sunController.value * 10),
                     height: 100 + (_sunController.value * 10),
