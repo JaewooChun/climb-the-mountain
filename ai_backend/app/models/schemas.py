@@ -14,8 +14,9 @@ class GoalValidationResponse(BaseModel):
 
 class TaskGenerationRequest(BaseModel):
     validated_goal: str
-    target_amount = Optional[float] = None
-    timeline_days = Optional[int] = None
+    financial_profile: 'FinancialProfile'
+    target_amount: Optional[float] = None
+    timeline_days: Optional[int] = None
 
 class DailyTask(BaseModel):
     id: str

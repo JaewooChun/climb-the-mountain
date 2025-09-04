@@ -1,14 +1,14 @@
 import torch
 import numpy as np
-from sklearn.metrics.parirwise import cosine_similarity
-from transformers import AutoTokenizer, AutoModelForSequenceClassification 
+from sklearn.metrics.pairwise import cosine_similarity
+from transformers import AutoTokenizer, AutoModel 
 from ..data.financial_keywords import FINANCIAL_GOAL_KEYWORDS
 
 class GoalValidator:
     def __init__(self):
         self.model_name = "ProsusAI/finbert"
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        self.model = AutoModelForSequenceClassification.from_pretrained(self.model_name)
+        self.model = AutoModel.from_pretrained(self.model_name)
         self.financial_embeddings = None
 
         self.initialize_reference_embeddings()
@@ -19,7 +19,7 @@ class GoalValidator:
         for keyword in FINANCIAL_GOAL_KEYWORDS:
             embedding = self.get_embedding(keyword)
             financial_embeds.append(embedding)
-        self.financial.embeddings = np.array(financial_embeds)
+        self.financial_embeddings = np.array(financial_embeds)
 
         print("Reference embeddings initialized.")
     

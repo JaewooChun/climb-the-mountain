@@ -1,6 +1,7 @@
 import openai
 import os
 import json
+import uuid
 from ..models.schemas import DailyTask, TaskGenerationResponse
 
 class TaskGenerator:
@@ -11,7 +12,7 @@ class TaskGenerator:
         """Generate 1-3 personalized daily tasks using ChatGPT"""
         
         # Prepare context for ChatGPT
-        context = self._build_context(goal, financial_profile, analysis)
+        context = self.build_context(goal, financial_profile, analysis)
         
         prompt = f"""
         You are a financial advisor AI. Based on the user's goal and spending analysis, 

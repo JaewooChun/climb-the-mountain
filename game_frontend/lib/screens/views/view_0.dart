@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../data/user_service.dart';
+import '../../services/api_service.dart';
+import '../../models/goal_validation.dart';
 import '../game_screen.dart';
 
 class View0 extends StatefulWidget {
@@ -49,112 +51,70 @@ class _View0State extends State<View0>
 
   void _showFinancialGoalDialog(BuildContext context) {
     final TextEditingController goalController = TextEditingController();
+    final ValueNotifier<bool> isValidating = ValueNotifier<bool>(false);
+    final ValueNotifier<GoalValidationResponse?> validationResult = ValueNotifier<GoalValidationResponse?>(null);
+    final ValueNotifier<String?> errorMessage = ValueNotifier<String?>(null);
 
     showDialog(
       context: context,
       barrierDismissible: true,
       builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF87CEEB).withOpacity(0.95),
-                  Color(0xFFFFB347).withOpacity(0.95),
-                  Color(0xFFFF6B6B).withOpacity(0.95),
-                ],
-                stops: [0.0, 0.6, 1.0],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Set Your Financial Peak',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(1, 1),
-                        blurRadius: 4,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF87CEEB).withOpacity(0.95),
+                      Color(0xFFFFB347).withOpacity(0.95),
+                      Color(0xFFFF6B6B).withOpacity(0.95),
                     ],
+                    stops: [0.0, 0.6, 1.0],
                   ),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'What financial goal would you like to achieve?',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
-                    shadows: [
-                      Shadow(
-                        offset: Offset(1, 1),
-                        blurRadius: 2,
-                        color: Colors.black.withOpacity(0.3),
-                      ),
-                    ],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 2,
                   ),
-                ),
-                SizedBox(height: 20),
-                TextField(
-                  controller: goalController,
-                  decoration: InputDecoration(
-                    hintText: 'e.g., Save \$10,000 for emergency fund',
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                    filled: true,
-                    fillColor: Colors.white.withOpacity(0.9),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide.none,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
                     ),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  maxLines: 3,
-                  minLines: 1,
+                  ],
                 ),
-                SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Set Your Financial Peak',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              offset: Offset(1, 1),
+                              blurRadius: 4,
+                              color: Colors.black.withOpacity(0.5),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Text(
-                        'Cancel',
+                      SizedBox(height: 16),
+                      Text(
+                        'What financial goal would you like to achieve?',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: Colors.white,
                           fontSize: 16,
+                          color: Colors.white.withOpacity(0.9),
                           shadows: [
                             Shadow(
                               offset: Offset(1, 1),
@@ -164,59 +124,301 @@ class _View0State extends State<View0>
                           ],
                         ),
                       ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        if (goalController.text.trim().isNotEmpty) {
-                          try {
-                            final userService = await UserService.getInstance();
-                            await userService.setFinancialGoal(goalController.text.trim());
-                            
-                            Navigator.of(context).pop();
-                            
-                            // Navigate to game screen
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (context) => GameScreen(),
+                      SizedBox(height: 20),
+                      TextField(
+                        controller: goalController,
+                        decoration: InputDecoration(
+                          hintText: 'e.g., Save \$10,000 for emergency fund',
+                          hintStyle: TextStyle(color: Colors.grey[600]),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.9),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                        maxLines: 3,
+                        minLines: 1,
+                        onChanged: (value) {
+                          // Clear validation results when text changes
+                          validationResult.value = null;
+                          errorMessage.value = null;
+                        },
+                      ),
+
+                      // Validation results or error messages appear here
+                      ValueListenableBuilder<GoalValidationResponse?>(
+                        valueListenable: validationResult,
+                        builder: (context, result, child) {
+                          if (result == null) return SizedBox.shrink();
+                          
+                          return Container(
+                            margin: EdgeInsets.only(top: 16),
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: result.isValid 
+                                  ? Colors.green.withOpacity(0.2)
+                                  : Colors.orange.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: result.isValid 
+                                    ? Colors.green
+                                    : Colors.orange,
+                                width: 1,
                               ),
-                            );
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Error saving goal. Please try again.',
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      result.isValid ? Icons.check_circle : Icons.info_outline,
+                                      color: result.isValid ? Colors.green : Colors.orange,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        result.isValid 
+                                            ? 'Great! Your goal is financially relevant.'
+                                            : 'Your goal could be more financial-focused.',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                backgroundColor: Colors.red,
+                                SizedBox(height: 8),
+                                Text(
+                                  'Confidence: ${(result.confidenceScore * 100).toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                if (result.suggestions != null && result.suggestions!.isNotEmpty) ...[
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Suggestions:',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  ...result.suggestions!.map((suggestion) => Padding(
+                                        padding: EdgeInsets.only(top: 4, left: 8),
+                                        child: Text(
+                                          '• $suggestion',
+                                          style: TextStyle(
+                                            color: Colors.white.withOpacity(0.9),
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      )),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Error message
+                      ValueListenableBuilder<String?>(
+                        valueListenable: errorMessage,
+                        builder: (context, error, child) {
+                          if (error == null) return SizedBox.shrink();
+                          
+                          return Container(
+                            margin: EdgeInsets.only(top: 16),
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: Colors.red,
+                                width: 1,
                               ),
-                            );
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF4CAF50),
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        elevation: 4,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    error,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
-                      child: Text(
-                        'Start Climbing',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+
+                      SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                shadows: [
+                                  Shadow(
+                                    offset: Offset(1, 1),
+                                    blurRadius: 2,
+                                    color: Colors.black.withOpacity(0.3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          ValueListenableBuilder<bool>(
+                            valueListenable: isValidating,
+                            builder: (context, validating, child) {
+                              return ElevatedButton(
+                                onPressed: validating 
+                                    ? null 
+                                    : () async {
+                                        // Check if text is empty at the time of button press
+                                        if (goalController.text.trim().isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Please enter a financial goal'),
+                                              backgroundColor: Colors.orange,
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                        
+                                        // First try to validate the goal
+                                        setState(() {
+                                          isValidating.value = true;
+                                          errorMessage.value = null;
+                                        });
+                                        
+                                        try {
+                                          final request = GoalValidationRequest(
+                                            goalText: goalController.text.trim(),
+                                          );
+                                          
+                                          final result = await ApiService.instance.validateGoal(request);
+                                          
+                                          setState(() {
+                                            validationResult.value = result;
+                                            isValidating.value = false;
+                                          });
+                                          
+                                          // Only proceed if the goal is valid
+                                          if (result.isValid) {
+                                            // Save the valid goal and proceed
+                                            final userService = await UserService.getInstance();
+                                            await userService.setFinancialGoal(goalController.text.trim());
+                                            
+                                            Navigator.of(context).pop();
+                                            
+                                            // Navigate to game screen
+                                            Navigator.of(context).pushReplacement(
+                                              MaterialPageRoute(
+                                                builder: (context) => GameScreen(),
+                                              ),
+                                            );
+                                          } else {
+                                            // Goal is not valid - show message and stay on dialog
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Please refine your goal to be more financially focused before continuing.',
+                                                ),
+                                                backgroundColor: Colors.orange,
+                                                duration: Duration(seconds: 4),
+                                              ),
+                                            );
+                                          }
+                                          
+                                        } catch (e) {
+                                          setState(() {
+                                            errorMessage.value = e.toString().replaceFirst('GoalValidationException: ', '');
+                                            isValidating.value = false;
+                                          });
+                                          
+                                          // If validation fails due to network/API issues, show error but don't proceed
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Unable to validate goal. Please check your connection and try again.',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                              duration: Duration(seconds: 4),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF4CAF50),
+                                  foregroundColor: Colors.white,
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  elevation: 4,
+                                ),
+                                child: validating
+                                    ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    : Text(
+                                        'Set Goal',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

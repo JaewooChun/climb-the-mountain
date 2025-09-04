@@ -167,6 +167,9 @@ class ClimbingViewState extends State<ClimbingView>
 
     // Reset for next level
     _resetForNextLevel();
+    
+    // Update lighting after using chisel (advancing to next level)
+    await _updateLightingForProgress();
 
     // Fade back in with new wall
     await _fadeController.reverse();
@@ -190,7 +193,7 @@ class ClimbingViewState extends State<ClimbingView>
   // Public method to refresh chisel count from parent widget
   Future<void> refreshChiselCount() async {
     await _refreshChiselCount();
-    await _updateLightingForProgress();
+    // Don't update lighting here - only update when chisel is used
   }
 
   @override

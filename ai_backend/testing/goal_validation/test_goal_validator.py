@@ -11,7 +11,7 @@ class TestGoalValidator(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures before each test method."""
         with patch('app.services.goal_validator.AutoTokenizer'):
-            with patch('app.services.goal_validator.AutoModelForSequenceClassification'):
+            with patch('app.services.goal_validator.AutoModel'):
                 self.validator = GoalValidator()
                 # Mock the financial embeddings for testing
                 self.validator.financial_embeddings = np.random.rand(5, 768)  # 5 keywords, 768 dim
