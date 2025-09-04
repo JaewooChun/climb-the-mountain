@@ -22,7 +22,8 @@ class _GameScreenState extends State<GameScreen> {
   UserService? _userService;
   int _currentLevel = 1;
   bool _isGeneratingTask = false; // Flag to prevent duplicate task generation
-  final GlobalKey<ClimbingViewState> _climbingViewKey = GlobalKey<ClimbingViewState>();
+  final GlobalKey<ClimbingViewState> _climbingViewKey =
+      GlobalKey<ClimbingViewState>();
 
   @override
   void initState() {
@@ -33,37 +34,37 @@ class _GameScreenState extends State<GameScreen> {
   Future<void> _initializeTasks() async {
     _tasksService = await TasksService.getInstance();
     _userService = await UserService.getInstance();
-    
+
     final tasks = await _tasksService!.getTodaysTasks();
     final currentLevel = await _userService!.getCurrentLevel();
-    
+
     // Hard-coded rule: Player can only have ONE task at a time
     final limitedTasks = tasks.isNotEmpty ? [tasks.first] : <DailyTask>[];
-    
+
     setState(() {
       _tasks = limitedTasks;
       _currentLevel = currentLevel;
     });
-    
+
     // Check if data was just reset and force refresh if needed
     await _checkForResetAndRefresh();
-    
+
     // If no tasks available and not already generating, automatically generate a new one using OpenAI API
     if (_tasks.isEmpty && !_isGeneratingTask) {
       await _generateNewTaskFromAPI();
     }
   }
-  
+
   Future<void> _checkForResetAndRefresh() async {
     try {
       final localStorage = await LocalStorageService.getInstance();
       final wasReset = await localStorage.wasDataJustReset();
-      
+
       if (wasReset) {
         // Data was just reset, refresh everything
         final tasks = await _tasksService!.getTodaysTasks();
         final currentLevel = await _userService!.getCurrentLevel();
-        
+
         if (mounted) {
           setState(() {
             _tasks = tasks;
@@ -77,23 +78,29 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _generateNewTaskFromAPI() async {
-    if (_isGeneratingTask) return; // Already generating, don't create duplicates
-    
+    if (_isGeneratingTask)
+      return; // Already generating, don't create duplicates
+
     // Hard-coded rule: Only generate if there are exactly 0 tasks
     if (_tasks.isNotEmpty) {
-      print('Player already has ${_tasks.length} task(s), not generating new task');
+      print(
+        'Player already has ${_tasks.length} task(s), not generating new task',
+      );
       return;
     }
-    
+
     _isGeneratingTask = true; // Set flag to prevent duplicates
+    print('🔄 Generating new task from OpenAI API...');
     try {
       // Double-check tasks from storage to be absolutely sure
       final currentTasks = await _tasksService!.getTodaysTasks();
       if (currentTasks.isNotEmpty) {
-        print('Found ${currentTasks.length} existing tasks in storage, aborting task generation');
+        print(
+          'Found ${currentTasks.length} existing tasks in storage, aborting task generation',
+        );
         return;
       }
-      
+
       // Get user's financial goal
       final financialGoal = await _userService!.getFinancialGoal();
       if (financialGoal == null) {
@@ -101,7 +108,7 @@ class _GameScreenState extends State<GameScreen> {
         return;
       }
 
-      // Create mock profile 
+      // Create mock profile
       final profileData = await ApiService.instance.createMockProfile(
         scenario: 'high_spender',
         userId: 'game_player',
@@ -119,12 +126,13 @@ class _GameScreenState extends State<GameScreen> {
         print('No tasks returned from API');
         return;
       }
-      
+
       final taskData = tasks[0];
       final taskTitle = taskData['title'] ?? 'Financial Challenge';
-      final taskDescription = taskData['description'] ?? 'Complete today\'s financial challenge';
+      final taskDescription =
+          taskData['description'] ?? 'Complete today\'s financial challenge';
       print('Auto-generated new task: $taskTitle - $taskDescription');
-      
+
       // Create a DailyTask and add it to TasksService
       final newTask = DailyTask(
         id: 'auto_generated_task_${DateTime.now().millisecondsSinceEpoch}',
@@ -132,34 +140,36 @@ class _GameScreenState extends State<GameScreen> {
         description: taskDescription,
         createdAt: DateTime.now(),
       );
-      
+
       // Add the task to the daily tasks list
       await _tasksService!.addTask(newTask);
-      
+
       // Set tasks to exactly one task (hard-coded limit)
       if (mounted) {
         setState(() {
           _tasks = [newTask]; // Only one task allowed
         });
+        print('✅ New task generated and added successfully!');
       }
-      
     } catch (e) {
       print('Error auto-generating task: $e');
       // Create fallback task if API fails
       final fallbackTask = DailyTask(
         id: 'fallback_task_${DateTime.now().millisecondsSinceEpoch}',
         title: 'Daily Financial Task',
-        description: 'Review your spending from yesterday and identify one area for improvement',
+        description:
+            'Review your spending from yesterday and identify one area for improvement',
         createdAt: DateTime.now(),
       );
-      
+
       await _tasksService!.addTask(fallbackTask);
-      
+
       // Set tasks to exactly one task (hard-coded limit)
       if (mounted) {
         setState(() {
           _tasks = [fallbackTask]; // Only one task allowed
         });
+        print('✅ Fallback task created and added successfully!');
       }
     } finally {
       _isGeneratingTask = false; // Always reset the flag
@@ -170,7 +180,7 @@ class _GameScreenState extends State<GameScreen> {
     setState(() {
       _isClimbingMode = !_isClimbingMode;
     });
-    
+
     // Refresh chisel count when switching to climbing mode
     if (_isClimbingMode) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -178,6 +188,24 @@ class _GameScreenState extends State<GameScreen> {
           await _climbingViewKey.currentState!.refreshChiselCount();
         }
       });
+    }
+  }
+
+  /// Callback method to refresh tasks when a new task is generated from climbing view
+  Future<void> _refreshTasksFromClimbingView() async {
+    print('🔄 New task generated from climbing view, refreshing task list...');
+
+    // Refresh the task list from storage
+    if (_tasksService != null) {
+      final tasks = await _tasksService!.getTodaysTasks();
+      final limitedTasks = tasks.isNotEmpty ? [tasks.first] : <DailyTask>[];
+
+      if (mounted) {
+        setState(() {
+          _tasks = limitedTasks;
+        });
+        print('✅ Task list refreshed with ${_tasks.length} task(s)');
+      }
     }
   }
 
@@ -226,17 +254,16 @@ class _GameScreenState extends State<GameScreen> {
                   constraints: BoxConstraints(maxHeight: 400),
                   child: SingleChildScrollView(
                     child: Column(
-                      children: _tasks.map((task) => _buildTaskItem(task)).toList(),
+                      children: _tasks
+                          .map((task) => _buildTaskItem(task))
+                          .toList(),
                     ),
                   ),
                 ),
                 SizedBox(height: 16),
                 Text(
                   'Complete tasks to earn chisels and progress up the mountain!',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -254,34 +281,43 @@ class _GameScreenState extends State<GameScreen> {
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.grey[300]!,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey[300]!, width: 1),
       ),
       child: Row(
         children: [
           GestureDetector(
             onTap: () async {
-              // Complete the task (it will be removed from the list)
-              await _tasksService!.completeTask(task.id);
-              
-              // Add chisel and increment task completion (handles level progression)
-              await _userService!.addChisel();
-              await _userService!.incrementTasksCompleted();
-              
-              // Refresh task list
-              await _initializeTasks();
-              
-              // Close dialog first
+              // Close dialog immediately for better UX
               Navigator.of(context).pop();
-              
-              // Small delay to ensure dialog is closed
-              await Future.delayed(Duration(milliseconds: 100));
-              
-              // Refresh chisel count in climbing view if it's active
+
+              // Perform all operations in parallel for better performance
+              await Future.wait([
+                // Complete the task (it will be removed from the list)
+                _tasksService!.completeTask(task.id),
+                // Add chisel and increment task completion (handles level progression) - batched operation
+                _userService!.completeTaskAndAddChisel(),
+              ]);
+
+              // Update UI state immediately without reloading all data
+              final newLevel = await _userService!.getCurrentLevel();
+              setState(() {
+                _tasks.removeWhere((t) => t.id == task.id);
+                _currentLevel = newLevel;
+              });
+
+              // Refresh chisel count in climbing view if it's active (non-blocking)
               if (_isClimbingMode && _climbingViewKey.currentState != null) {
-                await _climbingViewKey.currentState!.refreshChiselCount();
+                _climbingViewKey.currentState!.refreshChiselCount();
+              }
+
+              // Generate a new task after completing the current one (with delay for API call)
+              if (_tasks.isEmpty && !_isGeneratingTask) {
+                print('🔄 Task completed, generating new task in 2 seconds...');
+                Future.delayed(Duration(seconds: 2), () async {
+                  if (mounted && _tasks.isEmpty && !_isGeneratingTask) {
+                    await _generateNewTaskFromAPI();
+                  }
+                });
               }
             },
             child: Container(
@@ -290,16 +326,9 @@ class _GameScreenState extends State<GameScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.transparent,
-                border: Border.all(
-                  color: Colors.grey[400]!,
-                  width: 2,
-                ),
+                border: Border.all(color: Colors.grey[400]!, width: 2),
               ),
-              child: Icon(
-                Icons.add,
-                color: Color(0xFF4CAF50),
-                size: 16,
-              ),
+              child: Icon(Icons.add, color: Color(0xFF4CAF50), size: 16),
             ),
           ),
           SizedBox(width: 16),
@@ -318,10 +347,7 @@ class _GameScreenState extends State<GameScreen> {
                 SizedBox(height: 4),
                 Text(
                   task.description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -353,6 +379,7 @@ class _GameScreenState extends State<GameScreen> {
                   key: _climbingViewKey,
                   currentView: _currentLevel == 1 ? 'starting' : 'view_1',
                   currentLevel: _currentLevel,
+                  onTaskGenerated: _refreshTasksFromClimbingView,
                 )
               : _getCurrentView(),
 
@@ -375,10 +402,7 @@ class _GameScreenState extends State<GameScreen> {
                 ),
                 child: Text(
                   _isClimbingMode ? 'Enjoy View' : 'Climb',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -595,7 +619,6 @@ class _View0InGameModeState extends State<View0InGameMode>
                   ),
                 );
               }),
-
             ],
           ),
         );

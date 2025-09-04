@@ -9,11 +9,14 @@ import '../services/api_service.dart';
 class ClimbingView extends StatefulWidget {
   final String currentView;
   final int currentLevel;
+  final VoidCallback?
+  onTaskGenerated; // Callback to notify parent when task is generated
 
   const ClimbingView({
     Key? key,
     this.currentView = 'starting',
     this.currentLevel = 1,
+    this.onTaskGenerated,
   }) : super(key: key);
 
   @override
@@ -180,7 +183,7 @@ class ClimbingViewState extends State<ClimbingView>
 
     // Reset for next level
     _resetForNextLevel();
-    
+
     // Update lighting after using chisel (advancing to next level)
     await _updateLightingForProgress();
 
@@ -237,12 +240,13 @@ class ClimbingViewState extends State<ClimbingView>
       if (tasks == null || tasks.isEmpty) {
         throw Exception('No tasks returned from API');
       }
-      
+
       final taskData = tasks[0];
       final taskTitle = taskData['title'] ?? 'Financial Challenge';
-      final taskDescription = taskData['description'] ?? 'Complete today\'s financial challenge';
+      final taskDescription =
+          taskData['description'] ?? 'Complete today\'s financial challenge';
       print('New task generated: $taskTitle - $taskDescription');
-      
+
       // Create a DailyTask and add it to TasksService
       final newTask = DailyTask(
         id: 'generated_task_${DateTime.now().millisecondsSinceEpoch}',
@@ -250,35 +254,47 @@ class ClimbingViewState extends State<ClimbingView>
         description: taskDescription,
         createdAt: DateTime.now(),
       );
-      
+
       // Add the task to the daily tasks list
       await _tasksService!.addTask(newTask);
-      
+
+      // Notify parent widget that a new task was generated
+      if (widget.onTaskGenerated != null) {
+        widget.onTaskGenerated!();
+      }
+
       // Show dialog to let user know new task was added
       _showNewTaskDialog(taskDescription);
-      
     } catch (e) {
       print('Error generating task: $e');
-      
+
       // Create fallback task
       final fallbackTask = DailyTask(
         id: 'fallback_task_${DateTime.now().millisecondsSinceEpoch}',
         title: 'Financial Task',
-        description: 'Track your spending today and identify one area to optimize',
+        description:
+            'Track your spending today and identify one area to optimize',
         createdAt: DateTime.now(),
       );
-      
+
       // Add fallback task to the daily tasks list
       await _tasksService!.addTask(fallbackTask);
-      
+
+      // Notify parent widget that a new task was generated
+      if (widget.onTaskGenerated != null) {
+        widget.onTaskGenerated!();
+      }
+
       // Show fallback task dialog
-      _showNewTaskDialog('Track your spending today and identify one area to optimize');
+      _showNewTaskDialog(
+        'Track your spending today and identify one area to optimize',
+      );
     }
   }
 
   void _showNewTaskDialog(String taskDescription) {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -403,7 +419,6 @@ class ClimbingViewState extends State<ClimbingView>
                   ),
                 ),
 
-
                 // Chisel button (bottom left)
                 Positioned(
                   bottom: 120,
@@ -422,10 +437,10 @@ class ClimbingViewState extends State<ClimbingView>
                         ),
                       ),
                       // Chisel count indicator (completely hidden during any animation activity)
-                      if (_chiselCount > 0 && 
-                          !_showingStairs && 
-                          !_playerMoving && 
-                          !_wallScaling && 
+                      if (_chiselCount > 0 &&
+                          !_showingStairs &&
+                          !_playerMoving &&
+                          !_wallScaling &&
                           _fadeController.value == 0 &&
                           _stairController.value == 0 &&
                           _playerMoveController.value == 0 &&
@@ -675,7 +690,6 @@ class RockWallPainter extends CustomPainter {
         oldDelegate.stairProgress != stairProgress;
   }
 }
-
 
 class ChiselIconPainter extends CustomPainter {
   @override

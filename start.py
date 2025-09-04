@@ -403,6 +403,32 @@ class FinancialPeakLauncher:
         """Detect if there's existing player data"""
         indicators = []
         
+        # Check for reset flag files first - if they exist, clean them up and continue checking
+        reset_flag_file = self.root_dir / "RESET_REQUESTED.flag"
+        web_reset_file = self.root_dir / "web_reset_flag.html"
+        
+        # Also check for reset flag in home directory
+        import os
+        home_dir = os.path.expanduser("~")
+        home_reset_flag = os.path.join(home_dir, "RESET_REQUESTED.flag")
+        
+        if reset_flag_file.exists() or web_reset_file.exists() or os.path.exists(home_reset_flag):
+            # Reset flag files exist - clean them up as they're likely leftover from previous attempts
+            print("🧹 Found leftover reset flag files, cleaning them up...")
+            try:
+                if reset_flag_file.exists():
+                    reset_flag_file.unlink()
+                    print(f"  Removed: {reset_flag_file}")
+                if web_reset_file.exists():
+                    web_reset_file.unlink()
+                    print(f"  Removed: {web_reset_file}")
+                if os.path.exists(home_reset_flag):
+                    os.remove(home_reset_flag)
+                    print(f"  Removed: {home_reset_flag}")
+            except Exception as e:
+                print(f"  Warning: Could not remove reset flag files: {e}")
+            # Continue checking for other existing data
+        
         # Check for Flutter SharedPreferences (typically stored in platform-specific locations)
         # On macOS: ~/Library/Preferences/<app_id>.plist
         # On Web: localStorage/sessionStorage (handled by Flutter)
@@ -432,6 +458,14 @@ class FinancialPeakLauncher:
         system_files = list(self.root_dir.rglob(".DS_Store"))
         if system_files:
             indicators.append(f"System files: {len(system_files)} .DS_Store files")
+        
+        # Debug: print what we found
+        if indicators:
+            print("🔍 Data detection found:")
+            for indicator in indicators:
+                print(f"  • {indicator}")
+        else:
+            print("🔍 No existing player data detected")
             
         return indicators
 
@@ -441,6 +475,31 @@ class FinancialPeakLauncher:
         print("This will clear all local game progress and cached data.")
         
         reset_actions = []
+        
+        # Create reset flag file for Flutter app to detect
+        reset_flag_file = self.root_dir / "RESET_REQUESTED.flag"
+        try:
+            with open(reset_flag_file, 'w') as f:
+                f.write(f"RESET_REQUESTED_AT_{int(time.time())}")
+            reset_actions.append("Created reset flag file for Flutter app")
+            print(f"✅ Created reset flag file at: {reset_flag_file.absolute()}")
+            print(f"✅ Reset flag file exists: {reset_flag_file.exists()}")
+        except Exception as e:
+            reset_actions.append(f"Failed to create reset flag: {e}")
+            print(f"❌ Failed to create reset flag: {e}")
+        
+        # Also create reset flag in user's home directory for macOS app to find
+        try:
+            import os
+            home_dir = os.path.expanduser("~")
+            home_reset_flag = os.path.join(home_dir, "RESET_REQUESTED.flag")
+            with open(home_reset_flag, 'w') as f:
+                f.write(f"RESET_REQUESTED_AT_{int(time.time())}")
+            reset_actions.append("Created reset flag file in home directory for macOS app")
+            print(f"✅ Created reset flag file in home directory: {home_reset_flag}")
+        except Exception as e:
+            reset_actions.append(f"Failed to create home reset flag: {e}")
+            print(f"❌ Failed to create home reset flag: {e}")
         
         # Clear Flutter build and cache directories
         flutter_dirs_to_clear = [
@@ -499,6 +558,10 @@ class FinancialPeakLauncher:
         except Exception as e:
             reset_actions.append(f"Failed to run 'flutter clean': {e}")
         
+        # NOTE: Do NOT clean up reset flag files here - they need to be left for the Flutter app to detect
+        # The Flutter app will delete them after processing
+        print("ℹ️  Reset flag files left for Flutter app to detect and process")
+        
         # Display results
         print("\nRESET RESULTS:")
         for action in reset_actions:
@@ -510,6 +573,7 @@ class FinancialPeakLauncher:
         print("✅ macOS native app - SharedPreferences/containers cleared") 
         print("✅ Linux - Chrome data cleared")
         print("✅ Windows - Chrome data cleared")
+        print("✅ Cross-platform reset flag created")
         print("\n⚠️  If running in BROWSER, also manually clear browser data:")
         print("   - Chrome: Cmd+Shift+Delete → Clear browsing data → localhost")
         print("   - Or use Chrome DevTools: F12 → Application → Storage → Clear storage")
@@ -554,6 +618,42 @@ class FinancialPeakLauncher:
         except Exception as e:
             reset_actions.append(f"URL-based clearing failed: {e}")
             self._clear_os_browser_data(reset_actions)
+        
+        # Also create a localStorage flag file for web platforms to detect
+        # This will be picked up by the Flutter app when it starts
+        try:
+            # Create a simple HTML file that sets the localStorage flag
+            web_reset_file = self.root_dir / "web_reset_flag.html"
+            with open(web_reset_file, 'w') as f:
+                f.write("""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset Flag</title>
+</head>
+<body>
+    <script>
+        // Set the reset flag in localStorage
+        localStorage.setItem('_reset_requested_by_start_py', 'true');
+        console.log('Reset flag set in localStorage');
+        // Close the window after setting the flag
+        window.close();
+    </script>
+</body>
+</html>
+                """)
+            reset_actions.append("Created web reset flag HTML file")
+            
+            # Try to open it in the browser to set the localStorage flag
+            try:
+                webbrowser.open(f"file://{web_reset_file.absolute()}")
+                reset_actions.append("Opened web reset flag in browser")
+                time.sleep(2)  # Give time for localStorage to be set
+            except Exception as e:
+                reset_actions.append(f"Could not open web reset flag: {e}")
+                
+        except Exception as e:
+            reset_actions.append(f"Failed to create web reset flag: {e}")
     
     def _clear_os_browser_data(self, reset_actions):
         """Fallback method to clear OS-level browser data"""

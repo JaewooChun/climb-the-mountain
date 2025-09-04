@@ -34,18 +34,20 @@ class TasksService {
     try {
       final tasksList = json.decode(tasksJson) as List<dynamic>;
       _currentTasks = tasksList
-          .map((taskJson) => DailyTask.fromJson(taskJson as Map<String, dynamic>))
+          .map(
+            (taskJson) => DailyTask.fromJson(taskJson as Map<String, dynamic>),
+          )
           .toList();
-      
+
       // Remove any old debug tasks from loaded data
       await _removeOldDebugTasks();
-      
+
       // Check if we need to add default tasks for new users
       if (_currentTasks!.isEmpty) {
         _currentTasks = _getDefaultTasks();
         await _saveTasks();
       }
-      
+
       return _currentTasks!;
     } catch (e) {
       _currentTasks = _getDefaultTasks();
@@ -59,7 +61,8 @@ class TasksService {
       DailyTask(
         id: 'task_1',
         title: 'Commit to the Climb',
-        description: 'Take the first step towards your financial goal by committing to this journey.',
+        description:
+            'Take the first step towards your financial goal by committing to this journey.',
         createdAt: DateTime.now(),
       ),
     ];
@@ -68,33 +71,33 @@ class TasksService {
   Future<void> completeTask(String taskId) async {
     await getTodaysTasks(); // Ensure tasks are loaded
     final taskIndex = _currentTasks!.indexWhere((task) => task.id == taskId);
-    
+
     if (taskIndex != -1) {
       // Remove the completed task from the list instead of marking it complete
       _currentTasks!.removeAt(taskIndex);
-      
+
       await _saveTasks();
     }
   }
 
   Future<void> _removeOldDebugTasks() async {
     if (_currentTasks == null) return;
-    
+
     // Remove any tasks that contain debug-related text or have debug-related IDs
     final originalLength = _currentTasks!.length;
-    _currentTasks!.removeWhere((task) => 
-      task.title.toLowerCase().contains('debug') ||
-      task.description.toLowerCase().contains('debug') ||
-      task.id.toLowerCase().contains('debug') ||
-      task.title == 'Task for Debugging'
+    _currentTasks!.removeWhere(
+      (task) =>
+          task.title.toLowerCase().contains('debug') ||
+          task.description.toLowerCase().contains('debug') ||
+          task.id.toLowerCase().contains('debug') ||
+          task.title == 'Task for Debugging',
     );
-    
+
     // If we removed any debug tasks, save the updated list
     if (_currentTasks!.length != originalLength) {
       await _saveTasks();
     }
   }
-
 
   Future<void> addTask(DailyTask task) async {
     await getTodaysTasks(); // Ensure tasks are loaded
@@ -132,7 +135,16 @@ class TasksService {
 
   /// Resets all singleton instances - call this after data reset
   static void resetInstances() {
+    print('🔄 TasksService: Resetting singleton instance');
     _instance = null;
+  }
+
+  /// Clear cached tasks data from current instance
+  static void clearCachedData() {
+    if (_instance != null) {
+      print('🔄 TasksService: Clearing cached tasks from current instance');
+      _instance!._currentTasks = null;
+    }
   }
 
   /// Remove only debug tasks, preserve other user tasks
