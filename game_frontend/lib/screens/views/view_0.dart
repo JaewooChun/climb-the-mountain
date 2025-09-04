@@ -12,8 +12,7 @@ class View0 extends StatefulWidget {
   State<View0> createState() => _View0State();
 }
 
-class _View0State extends State<View0>
-    with TickerProviderStateMixin {
+class _View0State extends State<View0> with TickerProviderStateMixin {
   late AnimationController _cloudController;
   late AnimationController _birdController;
   late AnimationController _sunController;
@@ -52,7 +51,8 @@ class _View0State extends State<View0>
   void _showFinancialGoalDialog(BuildContext context) {
     final TextEditingController goalController = TextEditingController();
     final ValueNotifier<bool> isValidating = ValueNotifier<bool>(false);
-    final ValueNotifier<GoalValidationResponse?> validationResult = ValueNotifier<GoalValidationResponse?>(null);
+    final ValueNotifier<GoalValidationResponse?> validationResult =
+        ValueNotifier<GoalValidationResponse?>(null);
     final ValueNotifier<String?> errorMessage = ValueNotifier<String?>(null);
 
     showDialog(
@@ -155,17 +155,17 @@ class _View0State extends State<View0>
                         valueListenable: validationResult,
                         builder: (context, result, child) {
                           if (result == null) return const SizedBox.shrink();
-                          
+
                           return Container(
                             margin: EdgeInsets.only(top: 16),
                             padding: EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: result.isValid 
+                              color: result.isValid
                                   ? Colors.green.withOpacity(0.2)
                                   : Colors.orange.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(15),
                               border: Border.all(
-                                color: result.isValid 
+                                color: result.isValid
                                     ? Colors.green
                                     : Colors.orange,
                                 width: 1,
@@ -177,14 +177,18 @@ class _View0State extends State<View0>
                                 Row(
                                   children: [
                                     Icon(
-                                      result.isValid ? Icons.check_circle : Icons.info_outline,
-                                      color: result.isValid ? Colors.green : Colors.orange,
+                                      result.isValid
+                                          ? Icons.check_circle
+                                          : Icons.info_outline,
+                                      color: result.isValid
+                                          ? Colors.green
+                                          : Colors.orange,
                                       size: 20,
                                     ),
                                     SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        result.isValid 
+                                        result.isValid
                                             ? 'Great! Your goal is financially relevant.'
                                             : 'Your goal could be more financial-focused.',
                                         style: TextStyle(
@@ -203,7 +207,8 @@ class _View0State extends State<View0>
                                     fontSize: 14,
                                   ),
                                 ),
-                                if (result.suggestions != null && result.suggestions!.isNotEmpty) ...[
+                                if (result.suggestions != null &&
+                                    result.suggestions!.isNotEmpty) ...[
                                   SizedBox(height: 8),
                                   Text(
                                     'Suggestions:',
@@ -213,16 +218,18 @@ class _View0State extends State<View0>
                                       fontSize: 14,
                                     ),
                                   ),
-                                  ...result.suggestions!.map((suggestion) => Padding(
-                                        padding: EdgeInsets.only(top: 4, left: 8),
-                                        child: Text(
-                                          '• $suggestion',
-                                          style: TextStyle(
-                                            color: Colors.white.withOpacity(0.9),
-                                            fontSize: 13,
-                                          ),
+                                  ...result.suggestions!.map(
+                                    (suggestion) => Padding(
+                                      padding: EdgeInsets.only(top: 4, left: 8),
+                                      child: Text(
+                                        '• $suggestion',
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.9),
+                                          fontSize: 13,
                                         ),
-                                      )),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ],
                             ),
@@ -235,17 +242,14 @@ class _View0State extends State<View0>
                         valueListenable: errorMessage,
                         builder: (context, error, child) {
                           if (error == null) return const SizedBox.shrink();
-                          
+
                           return Container(
                             margin: EdgeInsets.only(top: 16),
                             padding: EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Colors.red.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(15),
-                              border: Border.all(
-                                color: Colors.red,
-                                width: 1,
-                              ),
+                              border: Border.all(color: Colors.red, width: 1),
                             ),
                             child: Row(
                               children: [
@@ -303,55 +307,67 @@ class _View0State extends State<View0>
                             valueListenable: isValidating,
                             builder: (context, validating, child) {
                               return ElevatedButton(
-                                onPressed: validating 
-                                    ? null 
+                                onPressed: validating
+                                    ? null
                                     : () async {
                                         // Check if text is empty at the time of button press
-                                        if (goalController.text.trim().isEmpty) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                        if (goalController.text
+                                            .trim()
+                                            .isEmpty) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             SnackBar(
-                                              content: Text('Please enter a financial goal'),
+                                              content: Text(
+                                                'Please enter a financial goal',
+                                              ),
                                               backgroundColor: Colors.orange,
                                             ),
                                           );
                                           return;
                                         }
-                                        
+
                                         // First try to validate the goal
                                         setState(() {
                                           isValidating.value = true;
                                           errorMessage.value = null;
                                         });
-                                        
+
                                         try {
                                           final request = GoalValidationRequest(
-                                            goalText: goalController.text.trim(),
+                                            goalText: goalController.text
+                                                .trim(),
                                           );
-                                          
-                                          final result = await ApiService.instance.validateGoal(request);
-                                          
+
+                                          final result = await ApiService
+                                              .instance
+                                              .validateGoal(request);
+
                                           setState(() {
                                             validationResult.value = result;
                                             isValidating.value = false;
                                           });
-                                          
+
                                           // Only proceed if the goal is valid
                                           if (result.isValid) {
-                                            // Save the valid goal and proceed
-                                            final userService = await UserService.getInstance();
-                                            await userService.setFinancialGoal(goalController.text.trim());
-                                            
+                                            // Save the valid goal
+                                            final userService =
+                                                await UserService.getInstance();
+                                            await userService.setFinancialGoal(
+                                              goalController.text.trim(),
+                                            );
+
                                             Navigator.of(context).pop();
-                                            
-                                            // Navigate to game screen
-                                            Navigator.of(context).pushReplacement(
-                                              MaterialPageRoute(
-                                                builder: (context) => GameScreen(),
-                                              ),
+
+                                            // Show transaction linking popup
+                                            _showTransactionLinkingDialog(
+                                              context,
                                             );
                                           } else {
                                             // Goal is not valid - show message and stay on dialog
-                                            ScaffoldMessenger.of(context).showSnackBar(
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
                                               SnackBar(
                                                 content: Text(
                                                   'Please refine your goal to be more financially focused before continuing.',
@@ -361,15 +377,21 @@ class _View0State extends State<View0>
                                               ),
                                             );
                                           }
-                                          
                                         } catch (e) {
                                           setState(() {
-                                            errorMessage.value = e.toString().replaceFirst('GoalValidationException: ', '');
+                                            errorMessage.value = e
+                                                .toString()
+                                                .replaceFirst(
+                                                  'GoalValidationException: ',
+                                                  '',
+                                                );
                                             isValidating.value = false;
                                           });
-                                          
+
                                           // If validation fails due to network/API issues, show error but don't proceed
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 'Unable to validate goal. Please check your connection and try again.',
@@ -398,7 +420,10 @@ class _View0State extends State<View0>
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
                                     : Text(
@@ -419,6 +444,143 @@ class _View0State extends State<View0>
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showTransactionLinkingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF4CAF50).withOpacity(0.95),
+                  Color(0xFF2196F3).withOpacity(0.95),
+                ],
+                stops: [0.0, 1.0],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Bank/Link icon
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.account_balance,
+                    size: 48,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 24),
+                Text(
+                  'Connect Your Bank',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 4,
+                        color: Colors.black.withOpacity(0.5),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'To personalize your financial journey, we\'ll analyze your spending patterns and create tailored challenges.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.white.withOpacity(0.9),
+                    height: 1.4,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(1, 1),
+                        blurRadius: 2,
+                        color: Colors.black.withOpacity(0.3),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 32),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    // Close the transaction linking dialog immediately
+                    Navigator.of(context).pop();
+
+                    // Navigate directly to the game screen
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => GameScreen()),
+                    );
+
+                    // Do the API call in background after navigation
+                    try {
+                      await ApiService.instance.createMockProfile(
+                        scenario: 'high_spender',
+                        userId: 'game_player',
+                      );
+                    } catch (e) {
+                      print('Background API call failed: $e');
+                    }
+                  },
+                  icon: Icon(Icons.link, color: Colors.white, size: 24),
+                  label: Text(
+                    'Link Your Transactions History!',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: 8,
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  '(no real linking occurs)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.7),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

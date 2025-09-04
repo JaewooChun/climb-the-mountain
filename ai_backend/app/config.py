@@ -18,14 +18,15 @@ class Settings(BaseSettings):
         "*"  # Allow all origins during development
     ]
     
-    # API Keys
+    # API Keys - Use absolute path to ensure .env is found  
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     
     # Database (if needed later)
     DATABASE_URL: str = "sqlite:///./financial_peak.db"
     
     class Config:
-        env_file = ".env"
+        # Use absolute path to the root directory .env file
+        env_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.env"))
         case_sensitive = True
 
 settings = Settings()

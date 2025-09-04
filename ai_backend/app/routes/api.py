@@ -3,6 +3,10 @@ from ..models.schemas import *
 from ..services.goal_validator import GoalValidator
 from ..services.task_generator import TaskGenerator
 from ..services.financial_analyzer import FinancialAnalyzer
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from testing.daily_task_generation.mock_data import create_mock_financial_profile
 
 router = APIRouter(prefix="/api/v1")
 
@@ -44,6 +48,38 @@ async def generate_daily_tasks(request: TaskGenerationRequest):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Task generation failed: {str(e)}")
+
+@router.post("/create-mock-profile")
+async def create_mock_profile(scenario: str = "high_spender", user_id: str = "game_player"):
+    """Create a mock financial profile for game integration"""
+    try:
+        financial_profile = create_mock_financial_profile(scenario=scenario, user_id=user_id)
+        return {
+            "status": "success",
+            "financial_profile": financial_profile.dict(),
+            "message": f"Created {scenario} financial profile with {len(financial_profile.transactions)} transactions"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Mock profile creation failed: {str(e)}")
+
+@router.post("/generate-next-task", response_model=TaskGenerationResponse)
+async def generate_next_task(request: TaskGenerationRequest):
+    """Generate the next task after chisel use - simplified for game flow"""
+    try:
+        # Analyze the financial profile
+        analysis = financial_analyzer.analyze_spending_patterns(request.financial_profile)
+        
+        # Generate a single next task
+        task_response = task_generator.generate_daily_tasks(
+            request.validated_goal,
+            request.financial_profile,
+            analysis
+        )
+        
+        return task_response
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Next task generation failed: {str(e)}")
 
 @router.get("/health")
 async def health_check():

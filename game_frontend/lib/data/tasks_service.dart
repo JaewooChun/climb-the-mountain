@@ -19,8 +19,8 @@ class TasksService {
 
   Future<List<DailyTask>> getTodaysTasks() async {
     if (_currentTasks != null) {
-      // Always ensure debug task is available when getting tasks
-      await _ensureDebugTaskAvailable();
+      // Remove any old debug tasks that might be cached
+      await _removeOldDebugTasks();
       return _currentTasks!;
     }
 
@@ -37,14 +37,14 @@ class TasksService {
           .map((taskJson) => DailyTask.fromJson(taskJson as Map<String, dynamic>))
           .toList();
       
+      // Remove any old debug tasks from loaded data
+      await _removeOldDebugTasks();
+      
       // Check if we need to add default tasks for new users
       if (_currentTasks!.isEmpty) {
         _currentTasks = _getDefaultTasks();
         await _saveTasks();
       }
-      
-      // Always ensure debug task is available
-      await _ensureDebugTaskAvailable();
       
       return _currentTasks!;
     } catch (e) {
@@ -62,12 +62,6 @@ class TasksService {
         description: 'Take the first step towards your financial goal by committing to this journey.',
         createdAt: DateTime.now(),
       ),
-      DailyTask(
-        id: 'debug_task',
-        title: 'Task for Debugging',
-        description: 'A debug task to help test the climbing functionality.',
-        createdAt: DateTime.now(),
-      ),
     ];
   }
 
@@ -79,32 +73,28 @@ class TasksService {
       // Remove the completed task from the list instead of marking it complete
       _currentTasks!.removeAt(taskIndex);
       
-      // Always ensure debug task is available after completing any task
-      await _ensureDebugTaskAvailable();
-      
       await _saveTasks();
     }
   }
 
-  Future<void> _ensureDebugTaskAvailable() async {
+  Future<void> _removeOldDebugTasks() async {
     if (_currentTasks == null) return;
     
-    // Check if debug task exists and is not completed
-    final debugTaskExists = _currentTasks!.any(
-      (task) => task.title == 'Task for Debugging' && !task.isCompleted,
+    // Remove any tasks that contain debug-related text or have debug-related IDs
+    final originalLength = _currentTasks!.length;
+    _currentTasks!.removeWhere((task) => 
+      task.title.toLowerCase().contains('debug') ||
+      task.description.toLowerCase().contains('debug') ||
+      task.id.toLowerCase().contains('debug') ||
+      task.title == 'Task for Debugging'
     );
     
-    // If no available debug task, add a new one
-    if (!debugTaskExists) {
-      final newDebugTask = DailyTask(
-        id: 'debug_task_${DateTime.now().millisecondsSinceEpoch}',
-        title: 'Task for Debugging',
-        description: 'A debug task to help test the climbing functionality.',
-        createdAt: DateTime.now(),
-      );
-      _currentTasks!.add(newDebugTask);
+    // If we removed any debug tasks, save the updated list
+    if (_currentTasks!.length != originalLength) {
+      await _saveTasks();
     }
   }
+
 
   Future<void> addTask(DailyTask task) async {
     await getTodaysTasks(); // Ensure tasks are loaded

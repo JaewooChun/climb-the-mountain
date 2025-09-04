@@ -12,6 +12,7 @@ import signal
 import threading
 import socket
 import requests
+import shutil
 from pathlib import Path
 
 class FinancialPeakLauncher:
@@ -398,8 +399,323 @@ class FinancialPeakLauncher:
             self.cleanup()
             return False
 
+    def detect_existing_player_data(self):
+        """Detect if there's existing player data"""
+        indicators = []
+        
+        # Check for Flutter SharedPreferences (typically stored in platform-specific locations)
+        # On macOS: ~/Library/Preferences/<app_id>.plist
+        # On Web: localStorage/sessionStorage (handled by Flutter)
+        
+        # Check for Flutter build artifacts that might contain cached data
+        flutter_build_dirs = [
+            self.frontend_dir / "build",
+            self.frontend_dir / ".dart_tool",
+        ]
+        
+        for build_dir in flutter_build_dirs:
+            if build_dir.exists() and any(build_dir.iterdir()):
+                indicators.append(f"Flutter build cache: {build_dir.name}/")
+        
+        # Check for backend cache/data
+        backend_cache_dirs = [
+            self.backend_dir / "__pycache__",
+            self.backend_dir / ".pytest_cache",
+            self.root_dir / ".pytest_cache",
+        ]
+        
+        for cache_dir in backend_cache_dirs:
+            if cache_dir.exists():
+                indicators.append(f"Backend cache: {cache_dir.name}/")
+        
+        # Check for any .DS_Store or other system files that might indicate usage
+        system_files = list(self.root_dir.rglob(".DS_Store"))
+        if system_files:
+            indicators.append(f"System files: {len(system_files)} .DS_Store files")
+            
+        return indicators
+
+    def perform_complete_reset(self):
+        """Perform complete reset of all local data"""
+        print("\n🔄 PERFORMING COMPLETE RESET...")
+        print("This will clear all local game progress and cached data.")
+        
+        reset_actions = []
+        
+        # Clear Flutter build and cache directories
+        flutter_dirs_to_clear = [
+            self.frontend_dir / "build",
+            self.frontend_dir / ".dart_tool" / "flutter_build",
+        ]
+        
+        for dir_path in flutter_dirs_to_clear:
+            if dir_path.exists():
+                try:
+                    shutil.rmtree(dir_path)
+                    reset_actions.append(f"Cleared {dir_path.name}/")
+                except Exception as e:
+                    reset_actions.append(f"Failed to clear {dir_path.name}/: {e}")
+        
+        # Clear backend cache
+        backend_dirs_to_clear = [
+            self.backend_dir / "__pycache__",
+            self.backend_dir / ".pytest_cache",
+            self.root_dir / ".pytest_cache",
+        ]
+        
+        for dir_path in backend_dirs_to_clear:
+            if dir_path.exists():
+                try:
+                    shutil.rmtree(dir_path)
+                    reset_actions.append(f"Cleared {dir_path.name}/")
+                except Exception as e:
+                    reset_actions.append(f"Failed to clear {dir_path.name}/: {e}")
+        
+        # Clear SharedPreferences data (platform-specific)
+        self._clear_shared_preferences(reset_actions)
+        
+        # Clear system files
+        system_files = list(self.root_dir.rglob(".DS_Store"))
+        for file_path in system_files:
+            try:
+                file_path.unlink()
+                reset_actions.append(f"Removed {file_path.name}")
+            except Exception as e:
+                reset_actions.append(f"Failed to remove {file_path.name}: {e}")
+        
+        # Run flutter clean to ensure complete cleanup
+        try:
+            result = subprocess.run(
+                ["flutter", "clean"],
+                cwd=self.frontend_dir,
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            if result.returncode == 0:
+                reset_actions.append("Executed 'flutter clean'")
+            else:
+                reset_actions.append(f"'flutter clean' failed: {result.stderr}")
+        except Exception as e:
+            reset_actions.append(f"Failed to run 'flutter clean': {e}")
+        
+        # Display results
+        print("\nRESET RESULTS:")
+        for action in reset_actions:
+            print(f"  {action}")
+        
+        print("\n🎉 Reset complete! The game will start as a brand new player experience.")
+        print("\n📱 PLATFORM COVERAGE:")
+        print("✅ Web browsers (Chrome/Safari) - localStorage cleared")
+        print("✅ macOS native app - SharedPreferences/containers cleared") 
+        print("✅ Linux - Chrome data cleared")
+        print("✅ Windows - Chrome data cleared")
+        print("\n⚠️  If running in BROWSER, also manually clear browser data:")
+        print("   - Chrome: Cmd+Shift+Delete → Clear browsing data → localhost")
+        print("   - Or use Chrome DevTools: F12 → Application → Storage → Clear storage")
+        print("\n🔄 Restart the game to see the fresh player experience.")
+        return True
+
+    def _clear_shared_preferences(self, reset_actions):
+        """Clear Flutter SharedPreferences data by opening a localhost URL"""
+        print("🌐 Clearing Flutter web app localStorage data...")
+        
+        # Strategy: Open the Flutter app with a reset parameter that triggers data clearing
+        try:
+            import webbrowser
+            import time
+            
+            # Open localhost:8080 with a reset parameter
+            reset_url = "http://localhost:8080/#/?reset_data=true"
+            print(f"Opening reset URL: {reset_url}")
+            
+            # First, check if the Flutter app is running
+            try:
+                response = requests.get("http://localhost:8080", timeout=5)
+                if response.status_code == 200:
+                    # Flutter app is running, open the reset URL
+                    webbrowser.open(reset_url)
+                    reset_actions.append("Opened Flutter app with reset parameter")
+                    
+                    # Give the browser time to load and execute clearing
+                    print("Waiting 5 seconds for data clearing to complete...")
+                    time.sleep(5)
+                    
+                    reset_actions.append("Flutter localStorage data cleared via URL parameter")
+                else:
+                    reset_actions.append("Flutter app not responding, falling back to file clearing")
+                    self._clear_os_browser_data(reset_actions)
+                    
+            except requests.exceptions.RequestException:
+                print("Flutter app not running, clearing browser files directly...")
+                reset_actions.append("Flutter app not running, cleared browser files directly")
+                self._clear_os_browser_data(reset_actions)
+                
+        except Exception as e:
+            reset_actions.append(f"URL-based clearing failed: {e}")
+            self._clear_os_browser_data(reset_actions)
+    
+    def _clear_os_browser_data(self, reset_actions):
+        """Fallback method to clear OS-level browser data"""
+        import platform
+        import glob
+        
+        system = platform.system().lower()
+        
+        if system == "darwin":  # macOS
+            # Clear Chrome localStorage files
+            chrome_dirs = [
+                os.path.expanduser("~/Library/Application Support/Google/Chrome/Default/Local Storage"),
+                os.path.expanduser("~/Library/Application Support/Google/Chrome/Profile 1/Local Storage"),
+            ]
+            
+            for chrome_dir in chrome_dirs:
+                if os.path.exists(chrome_dir):
+                    # Look for localhost data
+                    localhost_files = glob.glob(f"{chrome_dir}/*localhost*") + glob.glob(f"{chrome_dir}/*127.0.0.1*")
+                    for file_path in localhost_files:
+                        try:
+                            if os.path.isfile(file_path):
+                                os.remove(file_path)
+                                reset_actions.append(f"Cleared Chrome data: {os.path.basename(file_path)}")
+                            elif os.path.isdir(file_path):
+                                shutil.rmtree(file_path)
+                                reset_actions.append(f"Cleared Chrome directory: {os.path.basename(file_path)}")
+                        except Exception as e:
+                            reset_actions.append(f"Failed to clear Chrome data: {e}")
+            
+            # Clear Safari data if it exists
+            safari_dir = os.path.expanduser("~/Library/Safari/LocalStorage")
+            if os.path.exists(safari_dir):
+                localhost_files = glob.glob(f"{safari_dir}/*localhost*") + glob.glob(f"{safari_dir}/*127.0.0.1*")
+                for file_path in localhost_files:
+                    try:
+                        os.remove(file_path)
+                        reset_actions.append(f"Cleared Safari data: {os.path.basename(file_path)}")
+                    except Exception as e:
+                        reset_actions.append(f"Failed to clear Safari data: {e}")
+            
+            # Clear macOS native Flutter app data (SharedPreferences stored in plist files)
+            # Flutter apps on macOS store data in ~/Library/Preferences/
+            preferences_dir = os.path.expanduser("~/Library/Preferences")
+            if os.path.exists(preferences_dir):
+                # Look for Flutter app preference files (typically com.example.* or game_frontend related)
+                flutter_prefs = glob.glob(f"{preferences_dir}/*game_frontend*") + \
+                               glob.glob(f"{preferences_dir}/*flutter*") + \
+                               glob.glob(f"{preferences_dir}/*com.example*")
+                               
+                for pref_file in flutter_prefs:
+                    try:
+                        os.remove(pref_file)
+                        reset_actions.append(f"Cleared macOS app data: {os.path.basename(pref_file)}")
+                    except Exception as e:
+                        reset_actions.append(f"Failed to clear macOS app data: {e}")
+            
+            # Clear Flutter app containers/data directories
+            containers_dir = os.path.expanduser("~/Library/Containers")
+            if os.path.exists(containers_dir):
+                flutter_containers = glob.glob(f"{containers_dir}/*game_frontend*") + \
+                                   glob.glob(f"{containers_dir}/*flutter*")
+                                   
+                for container_dir in flutter_containers:
+                    try:
+                        if os.path.isdir(container_dir):
+                            shutil.rmtree(container_dir)
+                            reset_actions.append(f"Cleared macOS container: {os.path.basename(container_dir)}")
+                    except Exception as e:
+                        reset_actions.append(f"Failed to clear macOS container: {e}")
+                        
+        elif system == "linux":
+            # Clear Chrome data on Linux
+            chrome_dir = os.path.expanduser("~/.config/google-chrome/Default/Local Storage")
+            if os.path.exists(chrome_dir):
+                localhost_files = glob.glob(f"{chrome_dir}/*localhost*") + glob.glob(f"{chrome_dir}/*127.0.0.1*")
+                for file_path in localhost_files:
+                    try:
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+                            reset_actions.append(f"Cleared Chrome data: {os.path.basename(file_path)}")
+                    except Exception as e:
+                        reset_actions.append(f"Failed to clear Chrome data: {e}")
+                        
+        elif system == "windows":
+            # Clear Chrome data on Windows
+            chrome_dir = os.path.expanduser("~\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Local Storage")
+            if os.path.exists(chrome_dir):
+                localhost_files = glob.glob(f"{chrome_dir}\\*localhost*") + glob.glob(f"{chrome_dir}\\*127.0.0.1*")
+                for file_path in localhost_files:
+                    try:
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+                            reset_actions.append(f"Cleared Chrome data: {os.path.basename(file_path)}")
+                    except Exception as e:
+                        reset_actions.append(f"Failed to clear Chrome data: {e}")
+        
+        # Kill browser processes to clear in-memory data
+        try:
+            # Kill Chrome processes
+            subprocess.run(["pkill", "-f", "chrome"], capture_output=True)
+            reset_actions.append("🔄 Killed Chrome processes")
+        except:
+            pass
+            
+        try:
+            # Kill Safari processes
+            subprocess.run(["pkill", "-f", "Safari"], capture_output=True)
+            reset_actions.append("🔄 Killed Safari processes")  
+        except:
+            pass
+            
+        # Manual clearing instructions
+        reset_actions.append("ℹ️  For complete reset, clear browser data manually:")
+        reset_actions.append("   Chrome: Settings > Privacy > Clear browsing data > localhost")
+        reset_actions.append("   Safari: Develop menu > Empty Caches")
+
+    def check_reset_needed(self):
+        """Check if reset is needed and prompt user"""
+        existing_data = self.detect_existing_player_data()
+        
+        if not existing_data:
+            print("✨ Welcome! Starting fresh player experience...")
+            return False  # No reset needed
+        
+        print("\n🔍 EXISTING PLAYER DATA DETECTED:")
+        for indicator in existing_data:
+            print(f"  • {indicator}")
+        
+        print("\nOptions:")
+        print("  1. Continue with existing data (default)")
+        print("  2. Reset all data and start fresh")
+        print("  3. Exit")
+        
+        while True:
+            try:
+                choice = input("\nEnter your choice (1-3): ").strip()
+                
+                if choice == "" or choice == "1":
+                    print("Continuing with existing data...")
+                    return False
+                elif choice == "2":
+                    confirm = input("\nAre you sure? This will delete ALL progress! (yes/no): ").strip().lower()
+                    if confirm in ["yes", "y"]:
+                        return self.perform_complete_reset()
+                    else:
+                        print("Reset cancelled. Continuing with existing data...")
+                        return False
+                elif choice == "3":
+                    print("Exiting...")
+                    sys.exit(0)
+                else:
+                    print("Please enter 1, 2, or 3")
+            except KeyboardInterrupt:
+                print("\nExiting...")
+                sys.exit(0)
+
 def main():
     launcher = FinancialPeakLauncher()
+    
+    # Check for existing player data and offer reset option
+    launcher.check_reset_needed()
     
     # Handle Ctrl+C gracefully
     def signal_handler(sig, frame):

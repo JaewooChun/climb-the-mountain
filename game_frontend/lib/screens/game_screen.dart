@@ -5,6 +5,8 @@ import 'views/view_1.dart';
 import '../models/daily_task.dart';
 import '../data/tasks_service.dart';
 import '../data/user_service.dart';
+import '../data/local_storage_service.dart';
+import '../services/api_service.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({Key? key}) : super(key: key);
@@ -19,6 +21,7 @@ class _GameScreenState extends State<GameScreen> {
   TasksService? _tasksService;
   UserService? _userService;
   int _currentLevel = 1;
+  bool _isGeneratingTask = false; // Flag to prevent duplicate task generation
   final GlobalKey<ClimbingViewState> _climbingViewKey = GlobalKey<ClimbingViewState>();
 
   @override
@@ -30,12 +33,137 @@ class _GameScreenState extends State<GameScreen> {
   Future<void> _initializeTasks() async {
     _tasksService = await TasksService.getInstance();
     _userService = await UserService.getInstance();
+    
     final tasks = await _tasksService!.getTodaysTasks();
     final currentLevel = await _userService!.getCurrentLevel();
+    
+    // Hard-coded rule: Player can only have ONE task at a time
+    final limitedTasks = tasks.isNotEmpty ? [tasks.first] : <DailyTask>[];
+    
     setState(() {
-      _tasks = tasks;
+      _tasks = limitedTasks;
       _currentLevel = currentLevel;
     });
+    
+    // Check if data was just reset and force refresh if needed
+    await _checkForResetAndRefresh();
+    
+    // If no tasks available and not already generating, automatically generate a new one using OpenAI API
+    if (_tasks.isEmpty && !_isGeneratingTask) {
+      await _generateNewTaskFromAPI();
+    }
+  }
+  
+  Future<void> _checkForResetAndRefresh() async {
+    try {
+      final localStorage = await LocalStorageService.getInstance();
+      final wasReset = await localStorage.wasDataJustReset();
+      
+      if (wasReset) {
+        // Data was just reset, refresh everything
+        final tasks = await _tasksService!.getTodaysTasks();
+        final currentLevel = await _userService!.getCurrentLevel();
+        
+        if (mounted) {
+          setState(() {
+            _tasks = tasks;
+            _currentLevel = currentLevel;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error checking for reset: $e');
+    }
+  }
+
+  Future<void> _generateNewTaskFromAPI() async {
+    if (_isGeneratingTask) return; // Already generating, don't create duplicates
+    
+    // Hard-coded rule: Only generate if there are exactly 0 tasks
+    if (_tasks.isNotEmpty) {
+      print('Player already has ${_tasks.length} task(s), not generating new task');
+      return;
+    }
+    
+    _isGeneratingTask = true; // Set flag to prevent duplicates
+    try {
+      // Double-check tasks from storage to be absolutely sure
+      final currentTasks = await _tasksService!.getTodaysTasks();
+      if (currentTasks.isNotEmpty) {
+        print('Found ${currentTasks.length} existing tasks in storage, aborting task generation');
+        return;
+      }
+      
+      // Get user's financial goal
+      final financialGoal = await _userService!.getFinancialGoal();
+      if (financialGoal == null) {
+        print('No financial goal found, cannot generate task');
+        return;
+      }
+
+      // Create mock profile 
+      final profileData = await ApiService.instance.createMockProfile(
+        scenario: 'high_spender',
+        userId: 'game_player',
+      );
+
+      // Generate next task using the goal and profile
+      final taskResponse = await ApiService.instance.generateNextTask(
+        validatedGoal: financialGoal,
+        financialProfile: profileData['financial_profile'],
+      );
+
+      // Extract task details from the AI response
+      final tasks = taskResponse['tasks'] as List<dynamic>?;
+      if (tasks == null || tasks.isEmpty) {
+        print('No tasks returned from API');
+        return;
+      }
+      
+      final taskData = tasks[0];
+      final taskTitle = taskData['title'] ?? 'Financial Challenge';
+      final taskDescription = taskData['description'] ?? 'Complete today\'s financial challenge';
+      print('Auto-generated new task: $taskTitle - $taskDescription');
+      
+      // Create a DailyTask and add it to TasksService
+      final newTask = DailyTask(
+        id: 'auto_generated_task_${DateTime.now().millisecondsSinceEpoch}',
+        title: taskTitle,
+        description: taskDescription,
+        createdAt: DateTime.now(),
+      );
+      
+      // Add the task to the daily tasks list
+      await _tasksService!.addTask(newTask);
+      
+      // Set tasks to exactly one task (hard-coded limit)
+      if (mounted) {
+        setState(() {
+          _tasks = [newTask]; // Only one task allowed
+        });
+      }
+      
+    } catch (e) {
+      print('Error auto-generating task: $e');
+      // Create fallback task if API fails
+      final fallbackTask = DailyTask(
+        id: 'fallback_task_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Daily Financial Task',
+        description: 'Review your spending from yesterday and identify one area for improvement',
+        createdAt: DateTime.now(),
+      );
+      
+      await _tasksService!.addTask(fallbackTask);
+      
+      // Set tasks to exactly one task (hard-coded limit)
+      if (mounted) {
+        setState(() {
+          _tasks = [fallbackTask]; // Only one task allowed
+        });
+      }
+    } finally {
+      _isGeneratingTask = false; // Always reset the flag
+    }
   }
 
   void _toggleMode() {

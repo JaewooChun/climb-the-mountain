@@ -28,15 +28,34 @@ class FinancialGoalClassifier(nn.Module):
 class GoalValidator:
     def __init__(self):
         self.model_name = "ProsusAI/finbert"
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        self.model = AutoModel.from_pretrained(self.model_name)
+        self.tokenizer = None
+        self.model = None
         self.financial_embeddings = None
         self.unrelated_embeddings = None
-        self.classifier = FinancialGoalClassifier()
+        self.classifier = None
         self.classifier_trained = False
-
+        self._initialized = False
+    
+    def _ensure_initialized(self):
+        """Lazy initialization of FinBERT model and classifier training"""
+        if self._initialized:
+            return
+            
+        print("Initializing GoalValidator (downloading FinBERT model and training classifier)...")
+        
+        # Load FinBERT model
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.model = AutoModel.from_pretrained(self.model_name)
+        
+        # Initialize classifier
+        self.classifier = FinancialGoalClassifier()
+        
+        # Initialize embeddings and train classifier
         self.initialize_reference_embeddings()
         self.train_classifier()
+        
+        self._initialized = True
+        print("GoalValidator initialization completed.")
     
     def initialize_reference_embeddings(self):
         """initialize reference embeddings for financial and unrelated keywords"""
@@ -83,9 +102,6 @@ class GoalValidator:
             loss = criterion(outputs, y_tensor)
             loss.backward()
             optimizer.step()
-            
-            if epoch % 50 == 0:
-                print(f"Epoch {epoch}, Loss: {loss.item():.4f}")
         
         self.classifier_trained = True
         print("Classifier training completed!")
@@ -109,6 +125,9 @@ class GoalValidator:
             - confidence_score: Probability score from classifier
             - suggestions: List of improvement suggestions
         """
+        # Ensure initialization happens on first request
+        self._ensure_initialized()
+        
         # Check minimum word count requirement
         words = re.findall(r'\b\w+\b', goal_text.lower())
         if len(words) < 3:

@@ -95,6 +95,74 @@ class ApiService {
     }
   }
 
+  /// Create mock financial profile for game integration
+  Future<Map<String, dynamic>> createMockProfile({String scenario = 'high_spender', String userId = 'game_player'}) async {
+    final url = Uri.parse('$_baseUrl$_apiVersion/create-mock-profile?scenario=$scenario&user_id=$userId');
+    
+    try {
+      final response = await http.post(url).timeout(
+        const Duration(seconds: 10),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return jsonData;
+      } else {
+        throw GoalValidationException(
+          'Failed to create mock profile',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is GoalValidationException) {
+        rethrow;
+      }
+      throw GoalValidationException(
+        'Error creating mock profile: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Generate next task after chisel use
+  Future<Map<String, dynamic>> generateNextTask({
+    required String validatedGoal,
+    required Map<String, dynamic> financialProfile,
+  }) async {
+    final url = Uri.parse('$_baseUrl$_apiVersion/generate-next-task');
+    
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'validated_goal': validatedGoal,
+          'financial_profile': financialProfile,
+        }),
+      ).timeout(
+        const Duration(seconds: 15),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        return jsonData;
+      } else {
+        throw GoalValidationException(
+          'Failed to generate next task',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is GoalValidationException) {
+        rethrow;
+      }
+      throw GoalValidationException(
+        'Error generating next task: ${e.toString()}',
+      );
+    }
+  }
+
   /// Get the backend URL for debugging
   String get backendUrl => _baseUrl;
 }

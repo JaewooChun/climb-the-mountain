@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'views/view_config.dart';
 import '../data/user_service.dart';
+import '../data/tasks_service.dart';
+import '../models/daily_task.dart';
+import '../services/api_service.dart';
 
 class ClimbingView extends StatefulWidget {
   final String currentView;
@@ -31,6 +34,7 @@ class ClimbingViewState extends State<ClimbingView>
   int _chiselCount = 0;
   List<Offset> _stairPositions = [];
   UserService? _userService;
+  TasksService? _tasksService;
 
   @override
   void initState() {
@@ -64,6 +68,7 @@ class ClimbingViewState extends State<ClimbingView>
 
   Future<void> _initializeUserService() async {
     _userService = await UserService.getInstance();
+    _tasksService = await TasksService.getInstance();
     await _refreshChiselCount();
     await _updateLightingForProgress();
   }
@@ -144,6 +149,14 @@ class ClimbingViewState extends State<ClimbingView>
       _showingStairs = true;
     });
 
+    // Generate a new task after chisel use
+    try {
+      await _generateNewTask();
+    } catch (e) {
+      print('Failed to generate new task: $e');
+      // Continue with the game even if task generation fails
+    }
+
     // Start carving animation
     await _stairController.forward();
 
@@ -194,6 +207,108 @@ class ClimbingViewState extends State<ClimbingView>
   Future<void> refreshChiselCount() async {
     await _refreshChiselCount();
     // Don't update lighting here - only update when chisel is used
+  }
+
+  Future<void> _generateNewTask() async {
+    if (_userService == null || _tasksService == null) return;
+
+    try {
+      // Get user's financial goal and mock profile
+      final financialGoal = await _userService!.getFinancialGoal();
+      if (financialGoal == null) {
+        print('No financial goal found');
+        return;
+      }
+
+      // Create mock profile (should ideally be stored after initial creation)
+      final profileData = await ApiService.instance.createMockProfile(
+        scenario: 'high_spender',
+        userId: 'game_player',
+      );
+
+      // Generate next task using the goal and profile
+      final taskResponse = await ApiService.instance.generateNextTask(
+        validatedGoal: financialGoal,
+        financialProfile: profileData['financial_profile'],
+      );
+
+      // Extract task details from the AI response
+      final tasks = taskResponse['tasks'] as List<dynamic>?;
+      if (tasks == null || tasks.isEmpty) {
+        throw Exception('No tasks returned from API');
+      }
+      
+      final taskData = tasks[0];
+      final taskTitle = taskData['title'] ?? 'Financial Challenge';
+      final taskDescription = taskData['description'] ?? 'Complete today\'s financial challenge';
+      print('New task generated: $taskTitle - $taskDescription');
+      
+      // Create a DailyTask and add it to TasksService
+      final newTask = DailyTask(
+        id: 'generated_task_${DateTime.now().millisecondsSinceEpoch}',
+        title: taskTitle,
+        description: taskDescription,
+        createdAt: DateTime.now(),
+      );
+      
+      // Add the task to the daily tasks list
+      await _tasksService!.addTask(newTask);
+      
+      // Show dialog to let user know new task was added
+      _showNewTaskDialog(taskDescription);
+      
+    } catch (e) {
+      print('Error generating task: $e');
+      
+      // Create fallback task
+      final fallbackTask = DailyTask(
+        id: 'fallback_task_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Financial Task',
+        description: 'Track your spending today and identify one area to optimize',
+        createdAt: DateTime.now(),
+      );
+      
+      // Add fallback task to the daily tasks list
+      await _tasksService!.addTask(fallbackTask);
+      
+      // Show fallback task dialog
+      _showNewTaskDialog('Track your spending today and identify one area to optimize');
+    }
+  }
+
+  void _showNewTaskDialog(String taskDescription) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('New Financial Challenge!'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(taskDescription),
+              SizedBox(height: 16),
+              Text(
+                '📝 This task has been added to your Daily Tasks list. Click the checklist button to view all tasks.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Got it!'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

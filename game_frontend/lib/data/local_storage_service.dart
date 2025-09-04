@@ -45,6 +45,19 @@ class LocalStorageService {
   Future<void> clearUserData() async {
     await _prefs!.remove(_userProfileKey);
     await _prefs!.remove(_userIdKey);
+    
+    // Set a flag to indicate data was just reset
+    await _prefs!.setBool('_data_was_reset', true);
+  }
+  
+  Future<bool> wasDataJustReset() async {
+    final wasReset = _prefs!.getBool('_data_was_reset') ?? false;
+    if (wasReset) {
+      // Clear the flag after checking
+      await _prefs!.remove('_data_was_reset');
+      return true;
+    }
+    return false;
   }
 
   Future<bool> hasUserProfile() async {
