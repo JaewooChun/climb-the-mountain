@@ -23,16 +23,16 @@ class LocalStorageService {
   }
 
   Future<UserProfile?> getUserProfile() async {
-    print('🔍 LocalStorageService: getUserProfile called');
+    print('LocalStorageService: getUserProfile called');
     print(
       '🔍 LocalStorageService: Has profile key: ${_prefs!.containsKey(_userProfileKey)}',
     );
 
     final profileJson = _prefs!.getString(_userProfileKey);
-    print('🔍 LocalStorageService: Profile JSON: $profileJson');
+    print('LocalStorageService: Profile JSON: $profileJson');
 
     if (profileJson == null) {
-      print('🔍 LocalStorageService: No profile JSON found, returning null');
+      print('LocalStorageService: No profile JSON found, returning null');
       return null;
     }
 
@@ -47,7 +47,7 @@ class LocalStorageService {
       );
       return profile;
     } catch (e) {
-      print('🔍 LocalStorageService: Error decoding profile: $e');
+      print('LocalStorageService: Error decoding profile: $e');
       return null;
     }
   }
@@ -61,7 +61,7 @@ class LocalStorageService {
   }
 
   Future<void> clearUserData() async {
-    print('🧹 LocalStorageService: Clearing user data...');
+    print('LocalStorageService: Clearing user data...');
     print(
       '🧹 LocalStorageService: Before clear - has profile: ${_prefs!.containsKey(_userProfileKey)}',
     );
@@ -71,18 +71,18 @@ class LocalStorageService {
 
     // Get all keys for debugging
     final allKeys = _prefs!.getKeys();
-    print('🧹 LocalStorageService: All keys before clear: $allKeys');
+    print('LocalStorageService: All keys before clear: $allKeys');
 
     // Clear the specific keys
     final profileRemoved = await _prefs!.remove(_userProfileKey);
     final userIdRemoved = await _prefs!.remove(_userIdKey);
 
-    print('🧹 LocalStorageService: Profile removal success: $profileRemoved');
-    print('🧹 LocalStorageService: User ID removal success: $userIdRemoved');
+    print('LocalStorageService: Profile removal success: $profileRemoved');
+    print('LocalStorageService: User ID removal success: $userIdRemoved');
 
     // Also clear any tasks
     final tasksRemoved = await _prefs!.remove('daily_tasks');
-    print('🧹 LocalStorageService: Tasks removal success: $tasksRemoved');
+    print('LocalStorageService: Tasks removal success: $tasksRemoved');
 
     // Force reload preferences to ensure changes are applied
     await _prefs!.reload();
@@ -96,11 +96,11 @@ class LocalStorageService {
 
     // Get all keys after clear
     final allKeysAfter = _prefs!.getKeys();
-    print('🧹 LocalStorageService: All keys after clear: $allKeysAfter');
+    print('LocalStorageService: All keys after clear: $allKeysAfter');
 
     // Set a flag to indicate data was just reset
     await _prefs!.setBool('_data_was_reset', true);
-    print('🧹 LocalStorageService: Set reset flag');
+    print('LocalStorageService: Set reset flag');
   }
 
   Future<bool> wasDataJustReset() async {
@@ -131,7 +131,7 @@ class LocalStorageService {
 
   /// Resets all singleton instances - call this after data reset
   static void resetInstances() {
-    print('🔄 LocalStorageService: Resetting singleton instance');
+    print('LocalStorageService: Resetting singleton instance');
     _instance = null;
   }
 
@@ -154,34 +154,34 @@ class LocalStorageService {
     } else {
       // Create new instance if none exists
       prefs = await SharedPreferences.getInstance();
-      print('💥 LocalStorageService: Created new SharedPreferences instance');
+      print('LocalStorageService: Created new SharedPreferences instance');
     }
 
     // Get all keys for logging
     final allKeys = prefs.getKeys();
-    print('💥 LocalStorageService: Clearing keys: $allKeys');
+    print('LocalStorageService: Clearing keys: $allKeys');
 
     // Clear ALL existing data first
     for (final key in allKeys) {
       await prefs.remove(key);
-      print('💥 LocalStorageService: Removed key: $key');
+      print('LocalStorageService: Removed key: $key');
     }
 
     // Force a commit to ensure changes are persisted
     await prefs.commit();
-    print('💥 LocalStorageService: Committed changes to storage');
+    print('LocalStorageService: Committed changes to storage');
 
     // Set the reset flag AFTER clearing everything
     await prefs.setBool('_data_was_reset', true);
-    print('💥 LocalStorageService: Set reset flag AFTER clearing');
+    print('LocalStorageService: Set reset flag AFTER clearing');
 
-    print('💥 LocalStorageService: Cleared all data and set reset flag');
+    print('LocalStorageService: Cleared all data and set reset flag');
 
     // Reload to ensure changes are applied
     await prefs.reload();
 
     final remainingKeys = prefs.getKeys();
-    print('💥 LocalStorageService: Remaining keys after clear: $remainingKeys');
+    print('LocalStorageService: Remaining keys after clear: $remainingKeys');
 
     // Reset singleton to force fresh instance
     _instance = null;
@@ -199,28 +199,28 @@ class LocalStorageService {
 
       // Get all keys
       final allKeys = prefs.getKeys();
-      print('💥💥 LocalStorageService: Nuclear clearing keys: $allKeys');
+      print('LocalStorageService: Nuclear clearing keys: $allKeys');
 
       // Clear everything
       for (final key in allKeys) {
         await prefs.remove(key);
-        print('💥💥 LocalStorageService: Nuclear removed: $key');
+        print('LocalStorageService: Nuclear removed: $key');
       }
 
       // Force commit
       await prefs.commit();
-      print('💥💥 LocalStorageService: Nuclear commit completed');
+      print('LocalStorageService: Nuclear commit completed');
 
       // Set reset flag
       await prefs.setBool('_data_was_reset', true);
       await prefs.commit();
-      print('💥💥 LocalStorageService: Nuclear reset flag set');
+      print('LocalStorageService: Nuclear reset flag set');
 
       // Verify
       final remainingKeys = prefs.getKeys();
-      print('💥💥 LocalStorageService: Nuclear remaining keys: $remainingKeys');
+      print('LocalStorageService: Nuclear remaining keys: $remainingKeys');
     } catch (e) {
-      print('💥💥 LocalStorageService: Nuclear clear error: $e');
+      print('LocalStorageService: Nuclear clear error: $e');
     }
 
     // Reset singleton

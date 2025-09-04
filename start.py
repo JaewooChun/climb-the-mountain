@@ -414,7 +414,7 @@ class FinancialPeakLauncher:
         
         if reset_flag_file.exists() or web_reset_file.exists() or os.path.exists(home_reset_flag):
             # Reset flag files exist - clean them up as they're likely leftover from previous attempts
-            print("🧹 Found leftover reset flag files, cleaning them up...")
+            print("Found leftover reset flag files, cleaning them up...")
             try:
                 if reset_flag_file.exists():
                     reset_flag_file.unlink()
@@ -461,17 +461,17 @@ class FinancialPeakLauncher:
         
         # Debug: print what we found
         if indicators:
-            print("🔍 Data detection found:")
+            print("Data detection found:")
             for indicator in indicators:
-                print(f"  • {indicator}")
+                print(f"  - {indicator}")
         else:
-            print("🔍 No existing player data detected")
+            print("No existing player data detected")
             
         return indicators
 
     def perform_complete_reset(self):
         """Perform complete reset of all local data"""
-        print("\n🔄 PERFORMING COMPLETE RESET...")
+        print("\nPERFORMING COMPLETE RESET...")
         print("This will clear all local game progress and cached data.")
         
         reset_actions = []
@@ -482,11 +482,11 @@ class FinancialPeakLauncher:
             with open(reset_flag_file, 'w') as f:
                 f.write(f"RESET_REQUESTED_AT_{int(time.time())}")
             reset_actions.append("Created reset flag file for Flutter app")
-            print(f"✅ Created reset flag file at: {reset_flag_file.absolute()}")
-            print(f"✅ Reset flag file exists: {reset_flag_file.exists()}")
+            print(f"Created reset flag file at: {reset_flag_file.absolute()}")
+            print(f"Reset flag file exists: {reset_flag_file.exists()}")
         except Exception as e:
             reset_actions.append(f"Failed to create reset flag: {e}")
-            print(f"❌ Failed to create reset flag: {e}")
+            print(f"Failed to create reset flag: {e}")
         
         # Also create reset flag in user's home directory for macOS app to find
         try:
@@ -496,10 +496,10 @@ class FinancialPeakLauncher:
             with open(home_reset_flag, 'w') as f:
                 f.write(f"RESET_REQUESTED_AT_{int(time.time())}")
             reset_actions.append("Created reset flag file in home directory for macOS app")
-            print(f"✅ Created reset flag file in home directory: {home_reset_flag}")
+            print(f"Created reset flag file in home directory: {home_reset_flag}")
         except Exception as e:
             reset_actions.append(f"Failed to create home reset flag: {e}")
-            print(f"❌ Failed to create home reset flag: {e}")
+            print(f"Failed to create home reset flag: {e}")
         
         # Clear Flutter build and cache directories
         flutter_dirs_to_clear = [
@@ -560,29 +560,29 @@ class FinancialPeakLauncher:
         
         # NOTE: Do NOT clean up reset flag files here - they need to be left for the Flutter app to detect
         # The Flutter app will delete them after processing
-        print("ℹ️  Reset flag files left for Flutter app to detect and process")
+        print("Reset flag files left for Flutter app to detect and process")
         
         # Display results
         print("\nRESET RESULTS:")
         for action in reset_actions:
             print(f"  {action}")
         
-        print("\n🎉 Reset complete! The game will start as a brand new player experience.")
-        print("\n📱 PLATFORM COVERAGE:")
-        print("✅ Web browsers (Chrome/Safari) - localStorage cleared")
-        print("✅ macOS native app - SharedPreferences/containers cleared") 
-        print("✅ Linux - Chrome data cleared")
-        print("✅ Windows - Chrome data cleared")
-        print("✅ Cross-platform reset flag created")
-        print("\n⚠️  If running in BROWSER, also manually clear browser data:")
-        print("   - Chrome: Cmd+Shift+Delete → Clear browsing data → localhost")
-        print("   - Or use Chrome DevTools: F12 → Application → Storage → Clear storage")
-        print("\n🔄 Restart the game to see the fresh player experience.")
+        print("\nReset complete! The game will start as a brand new player experience.")
+        print("\nPLATFORM COVERAGE:")
+        print("Web browsers (Chrome/Safari) - localStorage cleared")
+        print("macOS native app - SharedPreferences/containers cleared") 
+        print("Linux - Chrome data cleared")
+        print("Windows - Chrome data cleared")
+        print("Cross-platform reset flag created")
+        print("\nIf running in BROWSER, also manually clear browser data:")
+        print("   - Chrome: Cmd+Shift+Delete -> Clear browsing data -> localhost")
+        print("   - Or use Chrome DevTools: F12 -> Application -> Storage -> Clear storage")
+        print("\nRestart the game to see the fresh player experience.")
         return True
 
     def _clear_shared_preferences(self, reset_actions):
         """Clear Flutter SharedPreferences data by opening a localhost URL"""
-        print("🌐 Clearing Flutter web app localStorage data...")
+        print("Clearing Flutter web app localStorage data...")
         
         # Strategy: Open the Flutter app with a reset parameter that triggers data clearing
         try:
@@ -755,19 +755,19 @@ class FinancialPeakLauncher:
         try:
             # Kill Chrome processes
             subprocess.run(["pkill", "-f", "chrome"], capture_output=True)
-            reset_actions.append("🔄 Killed Chrome processes")
+            reset_actions.append("Killed Chrome processes")
         except:
             pass
             
         try:
             # Kill Safari processes
             subprocess.run(["pkill", "-f", "Safari"], capture_output=True)
-            reset_actions.append("🔄 Killed Safari processes")  
+            reset_actions.append("Killed Safari processes")  
         except:
             pass
             
         # Manual clearing instructions
-        reset_actions.append("ℹ️  For complete reset, clear browser data manually:")
+        reset_actions.append("For complete reset, clear browser data manually:")
         reset_actions.append("   Chrome: Settings > Privacy > Clear browsing data > localhost")
         reset_actions.append("   Safari: Develop menu > Empty Caches")
 
@@ -776,12 +776,12 @@ class FinancialPeakLauncher:
         existing_data = self.detect_existing_player_data()
         
         if not existing_data:
-            print("✨ Welcome! Starting fresh player experience...")
+            print("Welcome! Starting fresh player experience...")
             return False  # No reset needed
         
-        print("\n🔍 EXISTING PLAYER DATA DETECTED:")
+        print("\nEXISTING PLAYER DATA DETECTED:")
         for indicator in existing_data:
-            print(f"  • {indicator}")
+            print(f"  - {indicator}")
         
         print("\nOptions:")
         print("  1. Continue with existing data (default)")

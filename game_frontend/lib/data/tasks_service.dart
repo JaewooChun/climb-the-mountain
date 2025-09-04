@@ -135,14 +135,14 @@ class TasksService {
 
   /// Resets all singleton instances - call this after data reset
   static void resetInstances() {
-    print('🔄 TasksService: Resetting singleton instance');
+    print('TasksService: Resetting singleton instance');
     _instance = null;
   }
 
   /// Clear cached tasks data from current instance
   static void clearCachedData() {
     if (_instance != null) {
-      print('🔄 TasksService: Clearing cached tasks from current instance');
+      print('TasksService: Clearing cached tasks from current instance');
       _instance!._currentTasks = null;
     }
   }

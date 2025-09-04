@@ -47,25 +47,25 @@ class _View0State extends State<View0> with TickerProviderStateMixin {
 
   Future<void> _checkForExistingUserData() async {
     try {
-      print('🔍 View0: Checking for existing user data...');
+      print('View0: Checking for existing user data...');
       final userService = await UserService.getInstance();
       final hasGoal = await userService.hasFinancialGoal();
-      print('🔍 View0: Has financial goal: $hasGoal');
-      
+      print('View0: Has financial goal: $hasGoal');
+
       if (hasGoal && mounted) {
         // User has existing data, navigate directly to game screen
-        print('🔍 View0: Navigating to GameScreen...');
+        print('View0: Navigating to GameScreen...');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => GameScreen()),
         );
         return;
       } else {
-        print('🔍 View0: No financial goal found, staying on setup screen');
+        print('View0: No financial goal found, staying on setup screen');
       }
     } catch (e) {
       print('Error checking user data: $e');
     }
-    
+
     // No existing data found, show onboarding
     if (mounted) {
       setState(() {
@@ -577,11 +577,12 @@ class _View0State extends State<View0> with TickerProviderStateMixin {
 
                     // Do the API call in background after navigation and save transaction history
                     try {
-                      final response = await ApiService.instance.createMockProfile(
-                        scenario: 'high_spender',
-                        userId: 'game_player',
-                      );
-                      
+                      final response = await ApiService.instance
+                          .createMockProfile(
+                            scenario: 'high_spender',
+                            userId: 'game_player',
+                          );
+
                       // Save the mock transaction data to user profile
                       final userService = await UserService.getInstance();
                       final mockTransactions = {
@@ -590,7 +591,9 @@ class _View0State extends State<View0> with TickerProviderStateMixin {
                         'source': 'mock_api',
                         'data': response, // Save the full API response
                       };
-                      await userService.saveTransactionHistory(mockTransactions);
+                      await userService.saveTransactionHistory(
+                        mockTransactions,
+                      );
                     } catch (e) {
                       print('Background API call failed: $e');
                     }
@@ -654,9 +657,7 @@ class _View0State extends State<View0> with TickerProviderStateMixin {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircularProgressIndicator(
-                  color: Colors.white,
-                ),
+                CircularProgressIndicator(color: Colors.white),
                 SizedBox(height: 16),
                 Text(
                   'Loading your financial journey...',

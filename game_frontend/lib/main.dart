@@ -10,11 +10,11 @@ import './data/tasks_service.dart';
 import 'web_helper_stub.dart' if (dart.library.html) 'web_helper_web.dart';
 
 void main() async {
-  print('🚀 main(): Starting Financial Peak app...');
+  print('main(): Starting Financial Peak app...');
   WidgetsFlutterBinding.ensureInitialized();
 
   // Check for reset requests from start.py (cross-platform)
-  print('🚀 main(): About to check for reset requests...');
+  print('main(): About to check for reset requests...');
   await checkForResetRequest();
 
   // Check for reset parameter in URL (only on web platform)
@@ -29,7 +29,7 @@ void main() async {
 }
 
 Future<void> checkForResetRequest() async {
-  print('🔍 checkForResetRequest: Starting reset check...');
+  print('checkForResetRequest: Starting reset check...');
   try {
     // Check for reset flag file created by start.py (cross-platform)
     if (!kIsWeb) {
@@ -38,11 +38,11 @@ Future<void> checkForResetRequest() async {
       );
       // For non-web platforms, check for the reset flag file
       // First, try to find the project root by looking for start.py
-      print('🔍 Attempting to find project root by looking for start.py...');
+      print('Attempting to find project root by looking for start.py...');
 
       // For macOS apps, we need to look in the user's home directory and common project locations
       final homeDir = Platform.environment['HOME'] ?? '';
-      print('🔍 Home directory: $homeDir');
+      print('Home directory: $homeDir');
 
       // Start with basic paths and add more as we find them
       final possiblePaths = <String>[
@@ -56,10 +56,10 @@ Future<void> checkForResetRequest() async {
       // Also check for reset flag directly in home directory (for macOS app)
       final homeResetFlag = File('$homeDir/RESET_REQUESTED.flag');
       if (await homeResetFlag.exists()) {
-        print('🔍 Found reset flag file in home directory!');
+        print('Found reset flag file in home directory!');
         possiblePaths.add('$homeDir/RESET_REQUESTED.flag');
       } else {
-        print('🔍 No reset flag file found in home directory');
+        print('No reset flag file found in home directory');
       }
 
       final projectRootPaths = [
@@ -76,8 +76,8 @@ Future<void> checkForResetRequest() async {
         final startPyFile = File('$path/start.py');
         if (await startPyFile.exists()) {
           projectRootPath = path;
-          print('🔍 Found start.py at: ${startPyFile.absolute.path}');
-          print('🔍 Project root path: $path');
+          print('Found start.py at: ${startPyFile.absolute.path}');
+          print('Project root path: $path');
           break;
         }
       }
@@ -90,20 +90,20 @@ Future<void> checkForResetRequest() async {
           '🔍 Checking for reset flag at: ${resetFlagInProjectRoot.absolute.path}',
         );
         if (await resetFlagInProjectRoot.exists()) {
-          print('🔍 Found reset flag file at project root!');
+          print('Found reset flag file at project root!');
           possiblePaths.add('$projectRootPath/RESET_REQUESTED.flag');
         } else {
-          print('🔍 No reset flag file found at project root');
+          print('No reset flag file found at project root');
         }
       } else {
-        print('🔍 Could not find project root (start.py not found)');
+        print('Could not find project root (start.py not found)');
       }
 
-      print('🔍 Checking for reset flag file in possible paths:');
-      print('🔍 Current working directory: ${Directory.current.path}');
+      print('Checking for reset flag file in possible paths:');
+      print('Current working directory: ${Directory.current.path}');
       for (final path in possiblePaths) {
         final file = File(path);
-        print('🔍   - ${file.absolute.path}');
+        print('   - ${file.absolute.path}');
       }
 
       File? resetFlagFile;
@@ -111,7 +111,7 @@ Future<void> checkForResetRequest() async {
         final file = File(path);
         if (await file.exists()) {
           resetFlagFile = file;
-          print('🔍 Found reset flag file at: ${file.absolute.path}');
+          print('Found reset flag file at: ${file.absolute.path}');
           break;
         }
       }
@@ -120,7 +120,7 @@ Future<void> checkForResetRequest() async {
         // Read the flag file content to verify it's a valid reset request
         try {
           final content = await resetFlagFile.readAsString();
-          print('🔍 Reset flag content: $content');
+          print('Reset flag content: $content');
 
           // Check if the content looks like a valid reset request
           if (content.contains('RESET_REQUESTED_AT_')) {
@@ -134,12 +134,12 @@ Future<void> checkForResetRequest() async {
             // Delete the reset flag file
             try {
               await resetFlagFile.delete();
-              print('✅ Reset flag file deleted');
+              print('Reset flag file deleted');
             } catch (e) {
-              print('⚠️ Could not delete reset flag file: $e');
+              print('Could not delete reset flag file: $e');
             }
 
-            print('✅ Complete reset performed from flag file');
+            print('Complete reset performed from flag file');
           } else {
             print(
               '⚠️ Reset flag file found but content is invalid, treating as leftover file',
@@ -147,9 +147,9 @@ Future<void> checkForResetRequest() async {
             // Delete the invalid flag file
             try {
               await resetFlagFile.delete();
-              print('✅ Invalid reset flag file deleted');
+              print('Invalid reset flag file deleted');
             } catch (e) {
-              print('⚠️ Could not delete invalid reset flag file: $e');
+              print('Could not delete invalid reset flag file: $e');
             }
             // Clean up any other leftover files
             await _cleanupLeftoverResetFiles();
@@ -161,7 +161,7 @@ Future<void> checkForResetRequest() async {
           // Delete the unreadable flag file
           try {
             await resetFlagFile.delete();
-            print('✅ Unreadable reset flag file deleted');
+            print('Unreadable reset flag file deleted');
           } catch (deleteError) {
             print(
               '⚠️ Could not delete unreadable reset flag file: $deleteError',
@@ -171,7 +171,7 @@ Future<void> checkForResetRequest() async {
           await _cleanupLeftoverResetFiles();
         }
       } else {
-        print('🔍 No reset flag file found in any of the checked paths');
+        print('No reset flag file found in any of the checked paths');
         // No reset flag, clean up any leftover reset files
         await _cleanupLeftoverResetFiles();
       }
@@ -196,7 +196,7 @@ Future<void> checkForResetRequest() async {
         await localStorage.removeKey('_reset_requested_by_start_py');
 
         if (kDebugMode) {
-          print('✅ Complete reset performed from localStorage flag');
+          print('Complete reset performed from localStorage flag');
         }
       } else {
         // No reset flag, clean up any leftover reset files
@@ -204,14 +204,14 @@ Future<void> checkForResetRequest() async {
       }
     }
   } catch (e) {
-    print('⚠️ Error checking for reset request: $e');
+    print('Error checking for reset request: $e');
   }
-  print('🔍 checkForResetRequest: Reset check completed');
+  print('checkForResetRequest: Reset check completed');
 }
 
 Future<void> _cleanupLeftoverResetFiles() async {
   try {
-    print('🧹 Cleaning up any leftover reset files...');
+    print('Cleaning up any leftover reset files...');
 
     // Clean up any leftover reset files that might exist
     final homeDir = Platform.environment['HOME'] ?? '';
@@ -238,34 +238,34 @@ Future<void> _cleanupLeftoverResetFiles() async {
           if (content.contains('RESET_REQUESTED_AT_')) {
             // This is a valid reset flag, but we're cleaning up, so delete it
             await file.delete();
-            print('🧹 Cleaned up valid reset flag: ${file.absolute.path}');
+            print('Cleaned up valid reset flag: ${file.absolute.path}');
             cleanedCount++;
           } else {
             // This is an invalid/leftover file, delete it
             await file.delete();
-            print('🧹 Cleaned up invalid reset flag: ${file.absolute.path}');
+            print('Cleaned up invalid reset flag: ${file.absolute.path}');
             cleanedCount++;
           }
         } catch (e) {
           // If we can't read it, just try to delete it
           try {
             await file.delete();
-            print('🧹 Cleaned up unreadable reset flag: ${file.absolute.path}');
+            print('Cleaned up unreadable reset flag: ${file.absolute.path}');
             cleanedCount++;
           } catch (deleteError) {
-            print('⚠️ Could not clean up ${file.absolute.path}: $deleteError');
+            print('Could not clean up ${file.absolute.path}: $deleteError');
           }
         }
       }
     }
 
     if (cleanedCount > 0) {
-      print('🧹 Cleaned up $cleanedCount leftover reset files');
+      print('Cleaned up $cleanedCount leftover reset files');
     } else {
-      print('🧹 No leftover reset files found');
+      print('No leftover reset files found');
     }
   } catch (e) {
-    print('⚠️ Error cleaning up leftover reset files: $e');
+    print('Error cleaning up leftover reset files: $e');
   }
 }
 
@@ -274,12 +274,12 @@ Future<void> checkForDataReset() async {
     // Check URL parameters for reset_data=true (only on web)
     final shouldReset = shouldResetData();
     if (kDebugMode) {
-      print('🔍 Web reset check: shouldResetData() = $shouldReset');
+      print('Web reset check: shouldResetData() = $shouldReset');
     }
 
     if (shouldReset) {
       if (kDebugMode) {
-        print('🔄 Data reset requested via URL parameter');
+        print('Data reset requested via URL parameter');
       }
 
       // Use the force complete reset method
@@ -289,7 +289,7 @@ Future<void> checkForDataReset() async {
       clearWebStorage();
 
       if (kDebugMode) {
-        print('✅ All game data has been reset to defaults via URL parameter');
+        print('All game data has been reset to defaults via URL parameter');
       }
 
       // Clean up URL if possible
@@ -303,7 +303,7 @@ Future<void> checkForDataReset() async {
     }
   } catch (e) {
     if (kDebugMode) {
-      print('⚠️ Error during data reset: $e');
+      print('Error during data reset: $e');
     }
   }
 }
@@ -317,7 +317,7 @@ Future<void> cleanupOldData() async {
 
     if (manualResetRequested) {
       if (kDebugMode) {
-        print('🔄 Manual reset requested for macOS build');
+        print('Manual reset requested for macOS build');
       }
 
       // Clear the manual reset flag first
@@ -327,7 +327,7 @@ Future<void> cleanupOldData() async {
       await UserService.forceCompleteReset();
 
       if (kDebugMode) {
-        print('✅ Manual reset completed for macOS build');
+        print('Manual reset completed for macOS build');
       }
       return;
     }
@@ -368,19 +368,19 @@ Future<void> cleanupOldData() async {
       await UserService.forceCompleteReset();
 
       if (kDebugMode) {
-        print('✅ Completed cleanup of corrupted data');
+        print('Completed cleanup of corrupted data');
       }
     } else {
       // No problematic data detected, just gentle cleanup
       await UserService.cleanupDebugData();
 
       if (kDebugMode) {
-        print('🧹 No problematic data found, preserving user progress');
+        print('No problematic data found, preserving user progress');
       }
     }
   } catch (e) {
     if (kDebugMode) {
-      print('⚠️ Error during data cleanup: $e');
+      print('Error during data cleanup: $e');
     }
   }
 }

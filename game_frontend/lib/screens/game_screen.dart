@@ -90,7 +90,7 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     _isGeneratingTask = true; // Set flag to prevent duplicates
-    print('🔄 Generating new task from OpenAI API...');
+    print('Generating new task from OpenAI API...');
     try {
       // Double-check tasks from storage to be absolutely sure
       final currentTasks = await _tasksService!.getTodaysTasks();
@@ -149,7 +149,7 @@ class _GameScreenState extends State<GameScreen> {
         setState(() {
           _tasks = [newTask]; // Only one task allowed
         });
-        print('✅ New task generated and added successfully!');
+        print('New task generated and added successfully!');
       }
     } catch (e) {
       print('Error auto-generating task: $e');
@@ -169,7 +169,7 @@ class _GameScreenState extends State<GameScreen> {
         setState(() {
           _tasks = [fallbackTask]; // Only one task allowed
         });
-        print('✅ Fallback task created and added successfully!');
+        print('Fallback task created and added successfully!');
       }
     } finally {
       _isGeneratingTask = false; // Always reset the flag
@@ -193,7 +193,7 @@ class _GameScreenState extends State<GameScreen> {
 
   /// Callback method to refresh tasks when a new task is generated from climbing view
   Future<void> _refreshTasksFromClimbingView() async {
-    print('🔄 New task generated from climbing view, refreshing task list...');
+    print('New task generated from climbing view, refreshing task list...');
 
     // Refresh the task list from storage
     if (_tasksService != null) {
@@ -204,7 +204,7 @@ class _GameScreenState extends State<GameScreen> {
         setState(() {
           _tasks = limitedTasks;
         });
-        print('✅ Task list refreshed with ${_tasks.length} task(s)');
+        print('Task list refreshed with ${_tasks.length} task(s)');
       }
     }
   }
@@ -312,7 +312,7 @@ class _GameScreenState extends State<GameScreen> {
 
               // Generate a new task after completing the current one (with delay for API call)
               if (_tasks.isEmpty && !_isGeneratingTask) {
-                print('🔄 Task completed, generating new task in 2 seconds...');
+                print('Task completed, generating new task in 2 seconds...');
                 Future.delayed(Duration(seconds: 2), () async {
                   if (mounted && _tasks.isEmpty && !_isGeneratingTask) {
                     await _generateNewTaskFromAPI();

@@ -24,12 +24,12 @@ class UserService {
   }
 
   Future<UserProfile> getCurrentProfile() async {
-    print('🔍 UserService: getCurrentProfile called');
+    print('UserService: getCurrentProfile called');
 
     // Check if data was just reset by looking at the reset flag
     final wasReset = await _localStorage!.wasDataJustReset();
     if (wasReset) {
-      print('🔍 UserService: Data was just reset, clearing cached profile');
+      print('UserService: Data was just reset, clearing cached profile');
       _currentProfile = null;
     }
 
@@ -40,16 +40,16 @@ class UserService {
       return _currentProfile!;
     }
 
-    print('🔍 UserService: Loading profile from localStorage...');
+    print('UserService: Loading profile from localStorage...');
     _currentProfile = await _localStorage!.getUserProfile();
 
     if (_currentProfile == null) {
-      print('🔍 UserService: No profile found, creating new one');
+      print('UserService: No profile found, creating new one');
       final userId = _generateUserId();
       _currentProfile = UserProfile(id: userId, createdAt: DateTime.now());
       await _localStorage!.saveUserProfile(_currentProfile!);
       await _localStorage!.saveUserId(userId);
-      print('🔍 UserService: Created new profile with ID: $userId');
+      print('UserService: Created new profile with ID: $userId');
     } else {
       print(
         '🔍 UserService: Loaded existing profile with goal: "${_currentProfile!.financialGoal}"',
@@ -105,13 +105,13 @@ class UserService {
   }
 
   Future<void> clearUserData() async {
-    print('🧹 UserService: Clearing user data...');
+    print('UserService: Clearing user data...');
     print(
       '🧹 UserService: Current profile before clear: ${_currentProfile?.financialGoal}',
     );
     await _localStorage!.clearUserData();
     _currentProfile = null;
-    print('🧹 UserService: Current profile after clear: $_currentProfile');
+    print('UserService: Current profile after clear: $_currentProfile');
   }
 
   Future<String?> getFinancialGoal() async {
@@ -192,17 +192,17 @@ class UserService {
 
   /// Resets all singleton instances - call this after data reset
   static void resetInstances() {
-    print('🔄 UserService: Resetting singleton instance');
+    print('UserService: Resetting singleton instance');
     _instance = null;
   }
 
   /// Complete reset of all data and services - ONLY for explicit user reset requests
   static Future<void> forceCompleteReset() async {
-    print('🔥 UserService: Force complete reset starting...');
+    print('UserService: Force complete reset starting...');
 
     // Clear cached data from current instances before resetting
     if (_instance != null) {
-      print('🔥 UserService: Clearing cached profile from current instance');
+      print('UserService: Clearing cached profile from current instance');
       _instance!._currentProfile = null;
     }
 
@@ -220,7 +220,7 @@ class UserService {
     // Verify reset was successful
     await _verifyResetSuccess();
 
-    print('🔥 UserService: Force complete reset finished');
+    print('UserService: Force complete reset finished');
   }
 
   /// Verify that the reset was successful by checking for any remaining data
@@ -240,7 +240,7 @@ class UserService {
       // Also check all keys in SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final allKeys = prefs.getKeys();
-      print('🔍 UserService: All SharedPreferences keys after reset: $allKeys');
+      print('UserService: All SharedPreferences keys after reset: $allKeys');
 
       if (hasProfile || userId != null || tasksJson != null) {
         print(
@@ -255,13 +255,13 @@ class UserService {
         );
       }
     } catch (e) {
-      print('⚠️ UserService: Error during reset verification: $e');
+      print('UserService: Error during reset verification: $e');
     }
   }
 
   /// Gentle cleanup - only removes problematic debug data, preserves user progress
   static Future<void> cleanupDebugData() async {
-    print('🧹 UserService: Gentle cleanup of debug data only...');
+    print('UserService: Gentle cleanup of debug data only...');
 
     try {
       // Get fresh instances
@@ -270,15 +270,15 @@ class UserService {
       // Only remove debug tasks, keep user data
       await tasksService.removeDebugTasks();
 
-      print('🧹 UserService: Debug data cleanup completed');
+      print('UserService: Debug data cleanup completed');
     } catch (e) {
-      print('⚠️ UserService: Error during debug cleanup: $e');
+      print('UserService: Error during debug cleanup: $e');
     }
   }
 
   /// Trigger a manual reset for macOS builds (for testing/debugging)
   static Future<void> triggerManualReset() async {
-    print('🔧 UserService: Triggering manual reset for macOS...');
+    print('UserService: Triggering manual reset for macOS...');
 
     try {
       final localStorage = await LocalStorageService.getInstance();
@@ -288,7 +288,7 @@ class UserService {
         '✅ UserService: Manual reset flag set. Restart the app to reset all data.',
       );
     } catch (e) {
-      print('⚠️ UserService: Error setting manual reset flag: $e');
+      print('UserService: Error setting manual reset flag: $e');
     }
   }
 }
