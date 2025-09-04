@@ -73,7 +73,7 @@ class TestGoalValidator(unittest.TestCase):
             mock_embedding.return_value = np.random.rand(768)
             
             with patch('app.services.goal_validator.cosine_similarity') as mock_similarity:
-                mock_similarity.return_value = np.array([[0.4]])  # Moderate similarity
+                mock_similarity.return_value = np.array([[0.35]])  # Below threshold similarity
                 
                 for goal in borderline_goals:
                     is_valid, confidence, suggestions = self.validator.validate_goal(goal)
@@ -112,15 +112,17 @@ class TestGoalValidator(unittest.TestCase):
                 is_valid, confidence, suggestions = self.validator.validate_goal("I want to learn to dance")
                 
                 self.assertFalse(is_valid)
+                self.assertGreater(len(suggestions), 0, "Should have suggestions for invalid goals")
                 self.assertIn("unrelated to financial matters", suggestions[0])
             
-            # Test moderate similarity (0.3 - 0.5)
+            # Test moderate similarity (0.3 - 0.4, below threshold)
             with patch('app.services.goal_validator.cosine_similarity') as mock_similarity:
-                mock_similarity.return_value = np.array([[0.4]])
+                mock_similarity.return_value = np.array([[0.35]])  # Below 0.4 threshold
                 
                 is_valid, confidence, suggestions = self.validator.validate_goal("I want to be better with money")
                 
                 self.assertFalse(is_valid)
+                self.assertGreater(len(suggestions), 0, "Should have suggestions for invalid goals")
                 self.assertIn("more specific", suggestions[0])
 
 if __name__ == '__main__':
