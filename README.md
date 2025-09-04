@@ -1,3 +1,5 @@
+Link to Video Explanation of Project: https://drive.google.com/file/d/1qeonxBkyKHPww8OA725iqRYhLobkNPc5/view?usp=sharing
+
 # Financial Peak 🏔️
 
 A gamified personal finance application that combines AI-powered financial goal validation with mountain climbing game frontend. Users set financial goals, receive AI validation, and climb a virtual mountain by completing daily financial tasks.
