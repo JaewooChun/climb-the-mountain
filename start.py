@@ -501,6 +501,36 @@ class FinancialPeakLauncher:
             reset_actions.append(f"Failed to create home reset flag: {e}")
             print(f"Failed to create home reset flag: {e}")
         
+        # Create reset flag in app's Documents directory (for sandboxed macOS apps)
+        try:
+            import os
+            # Try to find the app's Documents directory
+            # For macOS apps, this is typically in ~/Library/Containers/com.example.gameFrontend/Data/Documents
+            home_dir = os.path.expanduser("~")
+            app_documents_paths = [
+                os.path.join(home_dir, "Library", "Containers", "com.example.gameFrontend", "Data", "Documents"),
+                os.path.join(home_dir, "Library", "Containers", "com.example.gameFrontend", "Data"),
+                os.path.join(home_dir, "Documents", "FinancialPeak"),
+            ]
+            
+            for app_docs_path in app_documents_paths:
+                try:
+                    print(f"Attempting to create reset flag in: {app_docs_path}")
+                    os.makedirs(app_docs_path, exist_ok=True)
+                    app_reset_flag = os.path.join(app_docs_path, "RESET_REQUESTED.flag")
+                    with open(app_reset_flag, 'w') as f:
+                        f.write(f"RESET_REQUESTED_AT_{int(time.time())}")
+                    reset_actions.append(f"Created reset flag file in app Documents: {app_reset_flag}")
+                    print(f"SUCCESS: Created reset flag file in app Documents: {app_reset_flag}")
+                    print(f"File exists: {os.path.exists(app_reset_flag)}")
+                    break  # Success, no need to try other paths
+                except Exception as path_error:
+                    print(f"Could not create reset flag in {app_docs_path}: {path_error}")
+                    continue
+        except Exception as e:
+            reset_actions.append(f"Failed to create app Documents reset flag: {e}")
+            print(f"Failed to create app Documents reset flag: {e}")
+        
         # Clear Flutter build and cache directories
         flutter_dirs_to_clear = [
             self.frontend_dir / "build",

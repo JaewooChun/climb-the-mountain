@@ -25,7 +25,7 @@ class LocalStorageService {
   Future<UserProfile?> getUserProfile() async {
     print('LocalStorageService: getUserProfile called');
     print(
-      '🔍 LocalStorageService: Has profile key: ${_prefs!.containsKey(_userProfileKey)}',
+      'LocalStorageService: Has profile key: ${_prefs!.containsKey(_userProfileKey)}',
     );
 
     final profileJson = _prefs!.getString(_userProfileKey);
@@ -39,11 +39,11 @@ class LocalStorageService {
     try {
       final profileMap = json.decode(profileJson) as Map<String, dynamic>;
       print(
-        '🔍 LocalStorageService: Successfully decoded profile map: $profileMap',
+        'LocalStorageService: Successfully decoded profile map: $profileMap',
       );
       final profile = UserProfile.fromJson(profileMap);
       print(
-        '🔍 LocalStorageService: Created profile with goal: "${profile.financialGoal}"',
+        'LocalStorageService: Created profile with goal: "${profile.financialGoal}"',
       );
       return profile;
     } catch (e) {
@@ -63,10 +63,10 @@ class LocalStorageService {
   Future<void> clearUserData() async {
     print('LocalStorageService: Clearing user data...');
     print(
-      '🧹 LocalStorageService: Before clear - has profile: ${_prefs!.containsKey(_userProfileKey)}',
+      'LocalStorageService: Before clear - has profile: ${_prefs!.containsKey(_userProfileKey)}',
     );
     print(
-      '🧹 LocalStorageService: Before clear - has user ID: ${_prefs!.containsKey(_userIdKey)}',
+      'LocalStorageService: Before clear - has user ID: ${_prefs!.containsKey(_userIdKey)}',
     );
 
     // Get all keys for debugging
@@ -88,10 +88,10 @@ class LocalStorageService {
     await _prefs!.reload();
 
     print(
-      '🧹 LocalStorageService: After reload - has profile: ${_prefs!.containsKey(_userProfileKey)}',
+      'LocalStorageService: After reload - has profile: ${_prefs!.containsKey(_userProfileKey)}',
     );
     print(
-      '🧹 LocalStorageService: After reload - has user ID: ${_prefs!.containsKey(_userIdKey)}',
+      'LocalStorageService: After reload - has user ID: ${_prefs!.containsKey(_userIdKey)}',
     );
 
     // Get all keys after clear
@@ -138,7 +138,7 @@ class LocalStorageService {
   /// Nuclear option - clear ALL preferences data (for debugging)
   static Future<void> clearAllData() async {
     print(
-      '💥 LocalStorageService: Nuclear clear - removing ALL SharedPreferences data',
+      'LocalStorageService: Nuclear clear - removing ALL SharedPreferences data',
     );
 
     // Get the current instance to ensure we're clearing the right data
@@ -148,9 +148,7 @@ class LocalStorageService {
     if (currentInstance != null && currentInstance._prefs != null) {
       // Use the existing instance
       prefs = currentInstance._prefs!;
-      print(
-        '💥 LocalStorageService: Using existing SharedPreferences instance',
-      );
+      print('LocalStorageService: Using existing SharedPreferences instance');
     } else {
       // Create new instance if none exists
       prefs = await SharedPreferences.getInstance();
@@ -190,7 +188,7 @@ class LocalStorageService {
   /// Nuclear option - completely clear SharedPreferences and force fresh instance
   static Future<void> nuclearClear() async {
     print(
-      '💥💥 LocalStorageService: NUCLEAR CLEAR - Complete SharedPreferences wipe',
+      'LocalStorageService: NUCLEAR CLEAR - Complete SharedPreferences wipe',
     );
 
     try {

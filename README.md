@@ -1,6 +1,6 @@
 # Financial Peak 🏔️
 
-A gamified personal finance application that combines AI-powered financial goal validation with an engaging mountain climbing metaphor. Users set financial goals, receive AI validation, and climb a virtual mountain by completing daily financial tasks.
+A gamified personal finance application that combines AI-powered financial goal validation with mountain climbing game frontend. Users set financial goals, receive AI validation, and climb a virtual mountain by completing daily financial tasks.
 
 ## Architecture
 

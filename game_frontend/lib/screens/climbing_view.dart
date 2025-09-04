@@ -307,7 +307,7 @@ class ClimbingViewState extends State<ClimbingView>
               Text(taskDescription),
               SizedBox(height: 16),
               Text(
-                '📝 This task has been added to your Daily Tasks list. Click the checklist button to view all tasks.',
+                'This task has been added to your Daily Tasks list. Click the checklist button to view all tasks.',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],

@@ -256,7 +256,7 @@ class _View0State extends State<View0> with TickerProviderStateMixin {
                                     (suggestion) => Padding(
                                       padding: EdgeInsets.only(top: 4, left: 8),
                                       child: Text(
-                                        '• $suggestion',
+                                        '- $suggestion',
                                         style: TextStyle(
                                           color: Colors.white.withOpacity(0.9),
                                           fontSize: 13,

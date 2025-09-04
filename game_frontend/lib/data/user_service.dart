@@ -35,7 +35,7 @@ class UserService {
 
     if (_currentProfile != null) {
       print(
-        '🔍 UserService: Using cached profile with goal: "${_currentProfile!.financialGoal}"',
+        'UserService: Using cached profile with goal: "${_currentProfile!.financialGoal}"',
       );
       return _currentProfile!;
     }
@@ -52,7 +52,7 @@ class UserService {
       print('UserService: Created new profile with ID: $userId');
     } else {
       print(
-        '🔍 UserService: Loaded existing profile with goal: "${_currentProfile!.financialGoal}"',
+        'UserService: Loaded existing profile with goal: "${_currentProfile!.financialGoal}"',
       );
     }
 
@@ -99,7 +99,7 @@ class UserService {
     final hasGoal =
         profile.financialGoal != null && profile.financialGoal!.isNotEmpty;
     print(
-      '🔍 UserService: hasFinancialGoal check - Goal: "${profile.financialGoal}", Result: $hasGoal',
+      'UserService: hasFinancialGoal check - Goal: "${profile.financialGoal}", Result: $hasGoal',
     );
     return hasGoal;
   }
@@ -107,7 +107,7 @@ class UserService {
   Future<void> clearUserData() async {
     print('UserService: Clearing user data...');
     print(
-      '🧹 UserService: Current profile before clear: ${_currentProfile?.financialGoal}',
+      'UserService: Current profile before clear: ${_currentProfile?.financialGoal}',
     );
     await _localStorage!.clearUserData();
     _currentProfile = null;
@@ -234,7 +234,7 @@ class UserService {
       final resetFlag = await localStorage.getString('_data_was_reset');
 
       print(
-        '🔍 UserService: Reset verification - hasProfile: $hasProfile, userId: $userId, tasksJson: $tasksJson, resetFlag: $resetFlag',
+        'UserService: Reset verification - hasProfile: $hasProfile, userId: $userId, tasksJson: $tasksJson, resetFlag: $resetFlag',
       );
 
       // Also check all keys in SharedPreferences
@@ -244,14 +244,14 @@ class UserService {
 
       if (hasProfile || userId != null || tasksJson != null) {
         print(
-          '⚠️ UserService: WARNING - Reset may not have been completely successful!',
+          'UserService: WARNING - Reset may not have been completely successful!',
         );
         print(
-          '⚠️ UserService: Remaining data detected - this indicates a problem with the reset process',
+          'UserService: Remaining data detected - this indicates a problem with the reset process',
         );
       } else {
         print(
-          '✅ UserService: Reset verification successful - no user data found',
+          'UserService: Reset verification successful - no user data found',
         );
       }
     } catch (e) {
@@ -285,7 +285,7 @@ class UserService {
       await localStorage.setString('_manual_reset_requested', 'true');
 
       print(
-        '✅ UserService: Manual reset flag set. Restart the app to reset all data.',
+        'UserService: Manual reset flag set. Restart the app to reset all data.',
       );
     } catch (e) {
       print('UserService: Error setting manual reset flag: $e');
