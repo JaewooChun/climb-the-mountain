@@ -154,7 +154,7 @@ class _View0State extends State<View0>
                       ValueListenableBuilder<GoalValidationResponse?>(
                         valueListenable: validationResult,
                         builder: (context, result, child) {
-                          if (result == null) return SizedBox.shrink();
+                          if (result == null) return const SizedBox.shrink();
                           
                           return Container(
                             margin: EdgeInsets.only(top: 16),
@@ -234,7 +234,7 @@ class _View0State extends State<View0>
                       ValueListenableBuilder<String?>(
                         valueListenable: errorMessage,
                         builder: (context, error, child) {
-                          if (error == null) return SizedBox.shrink();
+                          if (error == null) return const SizedBox.shrink();
                           
                           return Container(
                             margin: EdgeInsets.only(top: 16),

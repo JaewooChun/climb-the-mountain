@@ -57,9 +57,11 @@ class ApiService {
           statusCode: response.statusCode,
         );
       }
-    } on SocketException {
+    } on SocketException catch (e) {
+      print('DEBUG: SocketException details: $e');
+      print('DEBUG: Trying to connect to: $_baseUrl$_apiVersion/validate-goal');
       throw GoalValidationException(
-        'Cannot connect to server. Please make sure the AI backend is running on ${'$_baseUrl'}.',
+        'Cannot connect to server. Please make sure the AI backend is running on ${'$_baseUrl'}. Error: ${e.message}',
       );
     } on http.ClientException {
       throw GoalValidationException(

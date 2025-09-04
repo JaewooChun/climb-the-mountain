@@ -10,6 +10,8 @@ import os
 import time
 import signal
 import threading
+import socket
+import requests
 from pathlib import Path
 
 class FinancialPeakLauncher:
@@ -63,6 +65,60 @@ class FinancialPeakLauncher:
         print(f"PASS - Frontend directory: {self.frontend_dir}")
         
         return True
+    
+    def is_port_available(self, host, port):
+        """Check if a port is available for binding"""
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(1)
+                result = sock.connect_ex((host, port))
+                return result != 0  # Port is available if connection fails
+        except Exception:
+            return False
+    
+    def is_backend_running(self, host="127.0.0.1", port=8000):
+        """Check if the backend API is already running and responding"""
+        try:
+            response = requests.get(f"http://{host}:{port}/api/v1/health", timeout=5)
+            return response.status_code == 200
+        except Exception:
+            return False
+    
+    def find_backend_process(self):
+        """Find existing backend processes using the port"""
+        try:
+            result = subprocess.run(
+                ["lsof", "-ti", ":8000"], 
+                capture_output=True, 
+                text=True, 
+                check=False
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                pids = result.stdout.strip().split('\n')
+                return [int(pid) for pid in pids if pid]
+            return []
+        except Exception:
+            return []
+    
+    def cleanup_existing_backend(self):
+        """Clean up any existing backend processes on port 8000"""
+        pids = self.find_backend_process()
+        if pids:
+            print(f"INFO - Found existing processes on port 8000: {pids}")
+            for pid in pids:
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                    time.sleep(1)
+                    # Check if process is still running, force kill if needed
+                    try:
+                        os.kill(pid, 0)  # This will raise OSError if process doesn't exist
+                        print(f"WARNING - Process {pid} still running, force killing...")
+                        os.kill(pid, signal.SIGKILL)
+                    except OSError:
+                        pass  # Process already terminated
+                    print(f"INFO - Terminated process {pid}")
+                except OSError as e:
+                    print(f"WARNING - Could not terminate process {pid}: {e}")
         
     def install_backend_deps(self):
         """Install backend Python dependencies"""
@@ -101,22 +157,60 @@ class FinancialPeakLauncher:
         """Start the AI backend server"""
         print("\nStarting AI backend...")
         
+        # Check if backend is already running
+        if self.is_backend_running():
+            print("INFO - Backend is already running and responding")
+            print("PASS - AI backend is available on http://127.0.0.1:8000")
+            return True
+        
+        # Check if port is occupied by non-responding service
+        if not self.is_port_available("127.0.0.1", 8000):
+            print("WARNING - Port 8000 is occupied by non-responding service")
+            print("INFO - Attempting to clean up existing processes...")
+            self.cleanup_existing_backend()
+            time.sleep(2)  # Give time for cleanup
+            
+            # Verify port is now available
+            if not self.is_port_available("127.0.0.1", 8000):
+                print("FAIL - Could not free port 8000")
+                return False
+        
         try:
+            print("INFO - Starting new backend instance...")
             self.backend_process = subprocess.Popen([
                 sys.executable, "run.py"
             ], cwd=self.backend_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             
-            # Wait a moment and check if it started successfully
-            time.sleep(2)
+            # Wait and check if it started successfully
+            for _ in range(10):  # Try for 10 seconds
+                time.sleep(1)
+                if self.backend_process.poll() is not None:
+                    # Process has terminated
+                    stdout, stderr = self.backend_process.communicate()
+                    print(f"FAIL - Backend process terminated:")
+                    if stdout:
+                        print(f"STDOUT: {stdout}")
+                    if stderr:
+                        print(f"STDERR: {stderr}")
+                    return False
+                
+                # Check if backend is responding
+                if self.is_backend_running():
+                    print("PASS - AI backend started successfully on http://127.0.0.1:8000")
+                    return True
+            
+            # If we get here, backend didn't start responding in time
+            print("FAIL - Backend started but is not responding to health checks")
             if self.backend_process.poll() is None:
-                print("PASS - AI backend started successfully on http://127.0.0.1:8000")
-                return True
-            else:
-                stdout, stderr = self.backend_process.communicate()
-                print(f"FAIL - Backend failed to start:")
-                print(f"STDOUT: {stdout}")
-                print(f"STDERR: {stderr}")
-                return False
+                # Still running, get current output
+                print("INFO - Backend process is still running, checking logs...")
+                # Give it a bit more time
+                time.sleep(3)
+                if self.is_backend_running():
+                    print("PASS - AI backend is now responding on http://127.0.0.1:8000")
+                    return True
+            
+            return False
                 
         except Exception as e:
             print(f"FAIL - Failed to start backend: {e}")
@@ -128,13 +222,74 @@ class FinancialPeakLauncher:
         print("This may take a moment for first-time setup...")
         
         try:
-            # For development, we'll run flutter run in debug mode
-            self.frontend_process = subprocess.Popen([
-                "flutter", "run", "--debug"
-            ], cwd=self.frontend_dir)
+            # Check available devices and use Chrome by default for web development
+            print("INFO - Checking available Flutter devices...")
+            devices_result = subprocess.run([
+                "flutter", "devices", "--machine"
+            ], cwd=self.frontend_dir, capture_output=True, text=True)
+            
+            device_arg = []
+            if devices_result.returncode == 0:
+                import json
+                try:
+                    devices = json.loads(devices_result.stdout)
+                    
+                    # Check available platforms
+                    macos_device = next((d for d in devices if d.get('id') == 'macos'), None)
+                    chrome_device = next((d for d in devices if d.get('id') == 'chrome'), None)
+                    
+                    # Let user choose platform if both are available
+                    if macos_device and chrome_device:
+                        print("\nAvailable platforms:")
+                        print("1. macOS (Native Desktop App)")
+                        print("2. Chrome (Web App)")
+                        
+                        while True:
+                            try:
+                                choice = input("\nChoose platform (1 for macOS, 2 for Chrome, or Enter for macOS): ").strip()
+                                
+                                if choice == "" or choice == "1":
+                                    device_arg = ['-d', 'macos']
+                                    print("INFO - Using macOS for native desktop development")
+                                    break
+                                elif choice == "2":
+                                    device_arg = ['-d', 'chrome', '--web-port', '8080']
+                                    print("INFO - Using Chrome for web development")
+                                    break
+                                else:
+                                    print("Invalid choice. Please enter 1, 2, or press Enter for default.")
+                            except (KeyboardInterrupt, EOFError):
+                                # Default to macOS if user interrupts
+                                device_arg = ['-d', 'macos']
+                                print("\nINFO - Defaulting to macOS for native desktop development")
+                                break
+                    
+                    elif macos_device:
+                        device_arg = ['-d', 'macos']
+                        print("INFO - Using macOS for native desktop development")
+                    elif chrome_device:
+                        device_arg = ['-d', 'chrome', '--web-port', '8080']
+                        print("INFO - Using Chrome for web development")
+                    else:
+                        # Fall back to first available device
+                        if devices:
+                            device_arg = ['-d', devices[0]['id']]
+                            print(f"INFO - Using device: {devices[0]['name']}")
+                except (json.JSONDecodeError, KeyError):
+                    print("WARNING - Could not parse device list, using default")
+            
+            # For development, run flutter with selected device
+            # Use release mode to avoid debug service null errors
+            cmd = ["flutter", "run", "--release"] + device_arg
+            print(f"INFO - Starting Flutter with command: {' '.join(cmd)}")
+            
+            self.frontend_process = subprocess.Popen(cmd, cwd=self.frontend_dir)
             
             print("PASS - Flutter frontend is starting...")
-            print("INFO - Choose your preferred device when prompted")
+            if device_arg:
+                print("INFO - Flutter will start automatically with selected device")
+            else:
+                print("INFO - Choose your preferred device when prompted")
             return True
             
         except Exception as e:
@@ -248,6 +403,7 @@ def main():
     
     # Handle Ctrl+C gracefully
     def signal_handler(sig, frame):
+        del sig, frame  # Acknowledge parameters
         launcher.cleanup()
         sys.exit(0)
         
