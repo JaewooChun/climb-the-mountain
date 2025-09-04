@@ -1,6 +1,7 @@
 import 'dart:math';
 import '../models/user_profile.dart';
 import 'local_storage_service.dart';
+import 'tasks_service.dart';
 
 class UserService {
   static UserService? _instance;
@@ -22,11 +23,25 @@ class UserService {
   }
 
   Future<UserProfile> getCurrentProfile() async {
-    if (_currentProfile != null) return _currentProfile!;
+    print('🔍 UserService: getCurrentProfile called');
     
+    // Check if data was just reset by looking at the reset flag
+    final wasReset = await _localStorage!.wasDataJustReset();
+    if (wasReset) {
+      print('🔍 UserService: Data was just reset, clearing cached profile');
+      _currentProfile = null;
+    }
+    
+    if (_currentProfile != null) {
+      print('🔍 UserService: Using cached profile with goal: "${_currentProfile!.financialGoal}"');
+      return _currentProfile!;
+    }
+    
+    print('🔍 UserService: Loading profile from localStorage...');
     _currentProfile = await _localStorage!.getUserProfile();
     
     if (_currentProfile == null) {
+      print('🔍 UserService: No profile found, creating new one');
       final userId = _generateUserId();
       _currentProfile = UserProfile(
         id: userId,
@@ -34,6 +49,9 @@ class UserService {
       );
       await _localStorage!.saveUserProfile(_currentProfile!);
       await _localStorage!.saveUserId(userId);
+      print('🔍 UserService: Created new profile with ID: $userId');
+    } else {
+      print('🔍 UserService: Loaded existing profile with goal: "${_currentProfile!.financialGoal}"');
     }
     
     return _currentProfile!;
@@ -76,12 +94,17 @@ class UserService {
 
   Future<bool> hasFinancialGoal() async {
     final profile = await getCurrentProfile();
-    return profile.financialGoal != null && profile.financialGoal!.isNotEmpty;
+    final hasGoal = profile.financialGoal != null && profile.financialGoal!.isNotEmpty;
+    print('🔍 UserService: hasFinancialGoal check - Goal: "${profile.financialGoal}", Result: $hasGoal');
+    return hasGoal;
   }
 
   Future<void> clearUserData() async {
+    print('🧹 UserService: Clearing user data...');
+    print('🧹 UserService: Current profile before clear: ${_currentProfile?.financialGoal}');
     await _localStorage!.clearUserData();
     _currentProfile = null;
+    print('🧹 UserService: Current profile after clear: $_currentProfile');
   }
 
   Future<String?> getFinancialGoal() async {
@@ -125,5 +148,56 @@ class UserService {
   Future<double> getLevelProgress() async {
     final tasksCompleted = await getTasksCompletedInCurrentLevel();
     return tasksCompleted / 3.0; // 3 tasks per level
+  }
+
+  Future<void> saveTransactionHistory(Map<String, dynamic> transactions) async {
+    final currentProfile = await getCurrentProfile();
+    _currentProfile = currentProfile.copyWith(
+      transactionHistory: transactions,
+    );
+    await _localStorage!.saveUserProfile(_currentProfile!);
+  }
+
+  Future<Map<String, dynamic>?> getTransactionHistory() async {
+    final profile = await getCurrentProfile();
+    return profile.transactionHistory;
+  }
+
+  /// Resets all singleton instances - call this after data reset
+  static void resetInstances() {
+    print('🔄 UserService: Resetting singleton instance');
+    _instance = null;
+  }
+
+  /// Complete reset of all data and services - ONLY for explicit user reset requests
+  static Future<void> forceCompleteReset() async {
+    print('🔥 UserService: Force complete reset starting...');
+    
+    // Nuclear option: Clear ALL SharedPreferences data
+    await LocalStorageService.clearAllData();
+    
+    // Reset all singletons
+    UserService.resetInstances();
+    LocalStorageService.resetInstances();
+    TasksService.resetInstances();
+    
+    print('🔥 UserService: Force complete reset finished');
+  }
+
+  /// Gentle cleanup - only removes problematic debug data, preserves user progress
+  static Future<void> cleanupDebugData() async {
+    print('🧹 UserService: Gentle cleanup of debug data only...');
+    
+    try {
+      // Get fresh instances
+      final tasksService = await TasksService.getInstance();
+      
+      // Only remove debug tasks, keep user data
+      await tasksService.removeDebugTasks();
+      
+      print('🧹 UserService: Debug data cleanup completed');
+    } catch (e) {
+      print('⚠️ UserService: Error during debug cleanup: $e');
+    }
   }
 }

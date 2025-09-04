@@ -129,4 +129,15 @@ class TasksService {
     _currentTasks = null;
     await _localStorage!.removeKey(_tasksKey);
   }
+
+  /// Resets all singleton instances - call this after data reset
+  static void resetInstances() {
+    _instance = null;
+  }
+
+  /// Remove only debug tasks, preserve other user tasks
+  Future<void> removeDebugTasks() async {
+    await getTodaysTasks(); // Ensure tasks are loaded
+    await _removeOldDebugTasks(); // This already has the debug removal logic
+  }
 }

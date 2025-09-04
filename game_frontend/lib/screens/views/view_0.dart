@@ -16,6 +16,8 @@ class _View0State extends State<View0> with TickerProviderStateMixin {
   late AnimationController _cloudController;
   late AnimationController _birdController;
   late AnimationController _sunController;
+  bool _isCheckingUserData = true;
+  bool _hasExistingUser = false;
 
   @override
   void initState() {
@@ -38,6 +40,38 @@ class _View0State extends State<View0> with TickerProviderStateMixin {
       duration: const Duration(seconds: 4),
       vsync: this,
     )..repeat(reverse: true);
+
+    // Check for existing user data and redirect if found
+    _checkForExistingUserData();
+  }
+
+  Future<void> _checkForExistingUserData() async {
+    try {
+      print('🔍 View0: Checking for existing user data...');
+      final userService = await UserService.getInstance();
+      final hasGoal = await userService.hasFinancialGoal();
+      print('🔍 View0: Has financial goal: $hasGoal');
+      
+      if (hasGoal && mounted) {
+        // User has existing data, navigate directly to game screen
+        print('🔍 View0: Navigating to GameScreen...');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => GameScreen()),
+        );
+        return;
+      } else {
+        print('🔍 View0: No financial goal found, staying on setup screen');
+      }
+    } catch (e) {
+      print('Error checking user data: $e');
+    }
+    
+    // No existing data found, show onboarding
+    if (mounted) {
+      setState(() {
+        _isCheckingUserData = false;
+      });
+    }
   }
 
   @override
@@ -541,12 +575,22 @@ class _View0State extends State<View0> with TickerProviderStateMixin {
                       MaterialPageRoute(builder: (context) => GameScreen()),
                     );
 
-                    // Do the API call in background after navigation
+                    // Do the API call in background after navigation and save transaction history
                     try {
-                      await ApiService.instance.createMockProfile(
+                      final response = await ApiService.instance.createMockProfile(
                         scenario: 'high_spender',
                         userId: 'game_player',
                       );
+                      
+                      // Save the mock transaction data to user profile
+                      final userService = await UserService.getInstance();
+                      final mockTransactions = {
+                        'scenario': 'high_spender',
+                        'linkedAt': DateTime.now().toIso8601String(),
+                        'source': 'mock_api',
+                        'data': response, // Save the full API response
+                      };
+                      await userService.saveTransactionHistory(mockTransactions);
                     } catch (e) {
                       print('Background API call failed: $e');
                     }
@@ -588,6 +632,47 @@ class _View0State extends State<View0> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    // Show loading screen while checking for existing user data
+    if (_isCheckingUserData) {
+      return Scaffold(
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF87CEEB), // Sky blue at top
+                Color(0xFFFFB347), // Orange middle
+                Color(0xFFFF6B6B), // Pink-red at bottom
+              ],
+              stops: [0.0, 0.6, 1.0],
+            ),
+          ),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(
+                  color: Colors.white,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Loading your financial journey...',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       body: AnimatedBuilder(
         animation: Listenable.merge([

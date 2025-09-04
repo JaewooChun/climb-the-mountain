@@ -7,6 +7,7 @@ class UserProfile {
   final int totalTasksCompleted;
   final int chiselCount;
   final int tasksCompletedInCurrentLevel;
+  final Map<String, dynamic>? transactionHistory; // Store mock transaction data
 
   const UserProfile({
     required this.id,
@@ -17,6 +18,7 @@ class UserProfile {
     this.totalTasksCompleted = 0,
     this.chiselCount = 0,
     this.tasksCompletedInCurrentLevel = 0,
+    this.transactionHistory,
   });
 
   UserProfile copyWith({
@@ -28,6 +30,7 @@ class UserProfile {
     int? totalTasksCompleted,
     int? chiselCount,
     int? tasksCompletedInCurrentLevel,
+    Map<String, dynamic>? transactionHistory,
   }) {
     return UserProfile(
       id: id ?? this.id,
@@ -38,6 +41,7 @@ class UserProfile {
       totalTasksCompleted: totalTasksCompleted ?? this.totalTasksCompleted,
       chiselCount: chiselCount ?? this.chiselCount,
       tasksCompletedInCurrentLevel: tasksCompletedInCurrentLevel ?? this.tasksCompletedInCurrentLevel,
+      transactionHistory: transactionHistory ?? this.transactionHistory,
     );
   }
 
@@ -51,6 +55,7 @@ class UserProfile {
       'totalTasksCompleted': totalTasksCompleted,
       'chiselCount': chiselCount,
       'tasksCompletedInCurrentLevel': tasksCompletedInCurrentLevel,
+      'transactionHistory': transactionHistory,
     };
   }
 
@@ -66,6 +71,7 @@ class UserProfile {
       totalTasksCompleted: json['totalTasksCompleted'] as int? ?? 0,
       chiselCount: json['chiselCount'] as int? ?? 0,
       tasksCompletedInCurrentLevel: json['tasksCompletedInCurrentLevel'] as int? ?? 0,
+      transactionHistory: json['transactionHistory'] as Map<String, dynamic>?,
     );
   }
 }

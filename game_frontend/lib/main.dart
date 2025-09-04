@@ -31,15 +31,8 @@ Future<void> checkForDataReset() async {
         print('🔄 Data reset requested via URL parameter');
       }
       
-      // Clear all user data
-      final userService = await UserService.getInstance();
-      final localStorage = await LocalStorageService.getInstance();
-      final tasksService = await TasksService.getInstance();
-      
-      // Clear user data
-      await userService.clearUserData();
-      await localStorage.clearUserData();
-      await tasksService.clearTasks();
+      // Use the force complete reset method
+      await UserService.forceCompleteReset();
       
       // Clear web localStorage if available
       clearWebStorage();
@@ -63,36 +56,39 @@ Future<void> cleanupOldData() async {
     // Initialize services and clean up old debug tasks
     final tasksService = await TasksService.getInstance();
     final userService = await UserService.getInstance();
-    final localStorage = await LocalStorageService.getInstance();
     
-    // Check if there's old data that needs to be reset by looking for debug tasks or high levels
+    // Check if there are debug tasks or unusually high levels that indicate corrupted data
     final tasks = await tasksService.getTodaysTasks();
     final currentLevel = await userService.getCurrentLevel();
+    print('🔍 cleanupOldData: Found ${tasks.length} tasks, current level: $currentLevel');
     
-    // If we detect debug tasks or an unusually high level (level 3+ could indicate cached old data)
-    bool hasOldData = tasks.any((task) => 
+    // Only reset if we detect debug tasks or unusually high levels (indicating old test data)
+    bool hasDebugTasks = tasks.any((task) => 
       task.title.toLowerCase().contains('debug') || 
       task.description.toLowerCase().contains('debug') ||
       task.title == 'Task for Debugging'
-    ) || currentLevel >= 3;
+    );
+    
+    bool hasOldData = hasDebugTasks || currentLevel >= 10; // Only reset for very high levels
+    print('🔍 cleanupOldData: Has debug tasks: $hasDebugTasks, High level: ${currentLevel >= 10}, Reset needed: $hasOldData');
     
     if (hasOldData) {
       if (kDebugMode) {
-        print('🔄 Detected old data (level $currentLevel), performing full reset...');
+        print('🔄 Detected problematic data (debug tasks or very high level), performing reset...');
       }
       
-      // Perform a full reset like the web version
-      await userService.clearUserData();
-      await localStorage.clearUserData();
-      await tasksService.clearTasks();
+      // Use the force complete reset method only for serious corruption
+      await UserService.forceCompleteReset();
       
       if (kDebugMode) {
-        print('✅ Completed full data reset on macOS');
+        print('✅ Completed cleanup of corrupted data');
       }
     } else {
-      // Just clean up debug tasks if no major reset needed
+      // No problematic data detected, just gentle cleanup
+      await UserService.cleanupDebugData();
+      
       if (kDebugMode) {
-        print('🧹 Cleaned up old debug tasks on app start');
+        print('🧹 No problematic data found, preserving user progress');
       }
     }
   } catch (e) {
